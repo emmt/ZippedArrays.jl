@@ -85,8 +85,8 @@ end
 [license-url]: ./LICENSE.md
 [license-img]: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
 
-[travis-img]: https://travis-ci.org/emmt/ZippedArrays.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/emmt/ZippedArrays.jl
+[travis-img]: https://travis-ci.com/emmt/ZippedArrays.jl.svg?branch=master
+[travis-url]: https://travis-ci.com/emmt/ZippedArrays.jl
 
 [appveyor-img]: https://ci.appveyor.com/api/projects/status/github/emmt/ZippedArrays.jl?branch=master
 [appveyor-url]: https://ci.appveyor.com/project/emmt/ZippedArrays-jl/branch/master
