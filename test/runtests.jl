@@ -34,10 +34,18 @@ D = rand(Bool, 1, dims...)
 
     # This works for vectors.
     n = 23
-    a = rand(eltype(A), n)
-    b = rand(eltype(B), n)
-    c = rand(eltype(C), n)
+    a = rand(Bool, n)
+    b = rand(Float32, n)
+    c = rand(Int16, n)
     @test [(a[i],b[i],c[i]) for i in 1:n] == ZippedArray(a,b,c)
+
+    sort!(ZippedArray(a,b);
+          lt = (x,y) -> ifelse(x[1] == y[1], x[2] < y[2], x[1] < y[1]))
+    flag = true
+    for i in 2:n
+        flag &= ((a[i-1] < a[i])|((a[i-1] == a[i])&(b[i-1] <= b[i])))
+    end
+    @test flag
 end
 
 end
