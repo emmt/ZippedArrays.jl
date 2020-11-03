@@ -1,0 +1,13 @@
+name = "ZippedArrays"
+uuid = "8051824b-fc5e-4603-89c4-0e6ea551cb88"
+authors = ["Éric Thiébaut <eric.thiebaut@univ-lyon1.fr>"]
+version = "0.1.0"
+
+[compat]
+julia = "^1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
