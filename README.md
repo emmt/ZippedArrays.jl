@@ -21,11 +21,13 @@ yields a zipped array instance `Z` such that the syntax `Z[i]` yields the
 Any number of arrays can be zipped together, they must however have the same
 indices (as returned by the `axes` method).
 
-Zipped arrays may be useful for multi-key sorting.  For instance:
+Compared to the `zip` function which only provides means to iterate through its
+arguments, a zipped array can be accessed in random order and for reading and
+writing.  This makes zipped arrays useful for multi-key sorting.  For instance:
 
 ```julia
 sort!(ZippedArray(A,B);
-      lt = (x,y) -> ifelse(x[1] == y[1], x[2] < y[2], x[1] < y [1]))
+      lt = (x,y) -> ifelse(x[1] == y[1], x[2] < y[2], x[1] < y[1]))
 ```
 
 will sort in-place vectors `A` and `B` such that the values in `A` are in
