@@ -6,9 +6,6 @@ const ZTuple{L,N} = NTuple{L,AbstractArray{<:Any,N}}
 
 struct ZippedArray{T,N,L,I,S<:ZTuple{L,N}} <: AbstractArray{T,N}
     args::S
-
-    # Inner constructor just to avoid outer constructor.
-    ZippedArray{T,N,L,I,S}(args::S) where {T,N,L,I,S} = new{T,N,L,I,S}(args)
 end
 
 """
