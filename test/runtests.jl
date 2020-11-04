@@ -2,7 +2,7 @@ module TestingZippedArrays
 
 using Test
 using ZippedArrays
-using ZippedArrays: throw_indices_mismatch
+using ZippedArrays: throw_indices_mismatch, all_match
 
 function generate_array(::Type{T}, dims::Dims{N}) where {T,N}
     A = Array{T,N}(undef, dims)
@@ -27,6 +27,7 @@ end
     @test_throws ErrorException ZippedArray()
     @test_throws MethodError ZippedArray(A,D)
     @test_throws DimensionMismatch ZippedArray(A,E)
+    @test all_match(nothing, cos)
 
     # Zip 1 array.
     Z = ZippedArray(D)
