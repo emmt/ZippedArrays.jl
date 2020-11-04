@@ -43,6 +43,7 @@ Base.IndexStyle(::Type{<:ZippedArray{T,N,L,I}}) where {T,N,L,I} = I()
                                   i::Int) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i]), Val(L))...)
     quote
+        $(Expr(:meta, :inline))
         @boundscheck checkbounds(A.args[1], i)
         @inbounds $lhs
     end
@@ -52,6 +53,7 @@ end
                                    val, i::Int) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i]), Val(L))...)
     quote
+        $(Expr(:meta, :inline))
         @boundscheck checkbounds(A.args[1], i)
         @inbounds $lhs = val
     end
@@ -61,6 +63,7 @@ end
                                   i::Vararg{Int,N}) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i...]), Val(L))...)
     quote
+        $(Expr(:meta, :inline))
         @boundscheck checkbounds(A.args[1], i...)
         @inbounds $lhs
     end
@@ -70,6 +73,7 @@ end
                                    val, i::Vararg{Int,N}) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i...]), Val(L))...)
     quote
+        $(Expr(:meta, :inline))
         @boundscheck checkbounds(A.args[1], i...)
         @inbounds $lhs = val
     end
