@@ -2,6 +2,7 @@ module TestingZippedArrays
 
 using Test
 using ZippedArrays
+using ZippedArrays: throw_indices_mismatch
 
 function generate_array(::Type{T}, dims::Dims{N}) where {T,N}
     A = Array{T,N}(undef, dims)
@@ -20,6 +21,9 @@ end
     E = generate_array(Float32, (dims .+ 1))
     V = view(E, map(d -> 2:d+1, dims)...)
 
+    for bool in (true, false)
+        @test_throws DimensionMismatch throw_indices_mismatch(bool, A, B, E)
+    end
     @test_throws ErrorException ZippedArray()
     @test_throws MethodError ZippedArray(A,D)
     @test_throws DimensionMismatch ZippedArray(A,E)
