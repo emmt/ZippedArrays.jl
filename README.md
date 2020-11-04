@@ -37,7 +37,7 @@ order.
 A zipped array is a simple immutable structure wrapped around the arguments of
 `ZippedArray` so zipped arrays are practically costless to build.
 Below is an example of how to build an array `C` whose elements are pairs of
-values from `A` and `B` and a zipped array `Z` built from `A` and `B`:
+values from `A` and `B` and a zipped array `Z` also built from `A` and `B`:
 
 ```julia
 using ZippedArrays
@@ -64,7 +64,8 @@ julia> sizeof(C)
 
 These numbers may depend on the architecture (here a 64-bit processor).
 
-Thanks to in-lining and optimizations, a zipped array may also be faster:
+Thanks to in-lining of functions and optimizations, a zipped array may also be
+faster.  For instance, with the arrays `C` and `Z` defined above:
 
 ```julia
 using BenchmarkTools
