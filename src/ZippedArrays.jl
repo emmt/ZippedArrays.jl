@@ -18,13 +18,23 @@ indices (as given by calling the `axes` method).
 
 """ ZippedArray
 
+# Parameters:
+#     T = array element type;
+#     N = number of dimensions;
+#     L = number of zipped arrays
+#     I = indexing style (true for linear, false otherwise)
+#     S = type of L-tuple of zipped arrays
 struct ZippedArray{T,N,L,I,S<:ArrayTuple{L,N}} <: AbstractArray{T,N}
     args::S
 end
 
+# Alias for zipped arrays with fast linear indexing.
+const FastZippedArray{T,N,L,S} = ZippedArray{T,N,L,true,S}
+
 ZippedArray(args::AbstractArray{<:Any,N}...) where {N} =
-    ZippedArray{Tuple{map(eltype,args)...},N,length(args),
-                typeof(get_index_style(args...)),typeof(args)}(args)
+    ZippedArray{Tuple{map(eltype,args)...}, N, length(args),
+                get_index_style(args...) === IndexLinear(),
+                typeof(args)}(args)
 
 ZippedArray() = error("at least one array argument must be provided")
 
@@ -37,9 +47,10 @@ Base.axes1(A::ZippedArray) = Base.axes1(A.args[1])
 Base.axes(A::ZippedArray) = axes(A.args[1])
 Base.axes(A::ZippedArray, i::Integer) = axes(A.args[1], i)
 
-Base.IndexStyle(::Type{<:ZippedArray{T,N,L,I}}) where {T,N,L,I} = I()
+Base.IndexStyle(::Type{<:FastZippedArray}) = IndexLinear()
+Base.IndexStyle(::Type{<:ZippedArray}) = IndexCartesian()
 
-@generated function Base.getindex(A::ZippedArray{T,N,L,IndexLinear},
+@generated function Base.getindex(A::FastZippedArray{T,N,L},
                                   i::Int) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i]), Val(L))...)
     quote
@@ -50,7 +61,7 @@ Base.IndexStyle(::Type{<:ZippedArray{T,N,L,I}}) where {T,N,L,I} = I()
     end
 end
 
-@generated function Base.setindex!(A::ZippedArray{T,N,L,IndexLinear},
+@generated function Base.setindex!(A::FastZippedArray{T,N,L},
                                    val, i::Int) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i]), Val(L))...)
     quote
@@ -62,12 +73,12 @@ end
 end
 
 @inline function Base.checkbounds(::Type{Bool},
-                                  A::ZippedArray{T,N,L,IndexLinear},
+                                  A::FastZippedArray{T,N,L},
                                   i::Int) where {T,N,L}
     checkbounds(Bool, A.args[1], i)
 end
 
-@generated function Base.getindex(A::ZippedArray{T,N,L,IndexCartesian},
+@generated function Base.getindex(A::ZippedArray{T,N,L},
                                   i::Vararg{Int,N}) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i...]), Val(L))...)
     quote
@@ -78,7 +89,7 @@ end
     end
 end
 
-@generated function Base.setindex!(A::ZippedArray{T,N,L,IndexCartesian},
+@generated function Base.setindex!(A::ZippedArray{T,N,L},
                                    val, i::Vararg{Int,N}) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i...]), Val(L))...)
     quote
@@ -90,7 +101,7 @@ end
 end
 
 @inline function Base.checkbounds(::Type{Bool},
-                                  A::ZippedArray{T,N,L,IndexCartesian},
+                                  A::ZippedArray{T,N,L},
                                   i::Vararg{Int,N}) where {T,N,L}
     checkbounds(Bool, A.args[1], i...)
 end
