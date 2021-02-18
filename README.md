@@ -4,17 +4,16 @@
 |:--------------------------------|:----------------------------------------------------------------|:--------------------------------------------------------------------|
 | [![][license-img]][license-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] | [![][coveralls-img]][coveralls-url] [![][codecov-img]][codecov-url] |
 
-`ZippedArrays` is a small [Julia][julia-url] package whih provides simple means
-to zip several (abstract) arrays together for accessing their elements
-simultaneously.  For instance, assuming that `A`, `B` and `C` are 3 Julia
-arrays, then:
+`ZippedArrays` is a [Julia][julia-url] package to zip several (abstract) arrays
+together for accessing their elements simultaneously.  For instance, assuming
+that `A`, `B` and `C` are 3 Julia arrays, then:
 
 ```julia
 using ZippedArrays
 Z = ZippedArray(A,B,C)
 ```
 
-yields a zipped array instance `Z` such that the syntax `Z[i]` yields the
+builds a zipped array instance `Z` such that the syntax `Z[i]` yields the
 3-tuple `(A[i],B[i],C[i])` while the syntax `Z[i] = (a,b,c)` is equivalent to
 `(A[i],B[i],C[i]) = (a,b,c)`.
 
@@ -35,9 +34,9 @@ increasing order and, in case of equality, the values in `B` are in increasing
 order.
 
 A zipped array is a simple immutable structure wrapped around the arguments of
-`ZippedArray` so zipped arrays are practically costless to build.
-Below is an example of how to build an array `C` whose elements are pairs of
-values from `A` and `B` and a zipped array `Z` also built from `A` and `B`:
+`ZippedArray` so zipped arrays are almost costless to build.  Below is an
+example of how to build an array `C` whose elements are pairs of values from
+`A` and `B` and a zipped array `Z` also built from `A` and `B`:
 
 ```julia
 using ZippedArrays
@@ -51,8 +50,8 @@ C == Z # yields true
 
 The comparison `C == Z` shows that the two arrays are virtually the same
 (although not the same object, that is `C !== Z`).  Building `Z` however
-requires no copy of array elements and the sizes of `Z` and `C` are quite
-different:
+requires no copy of array elements and hardly requires additional memory, the
+sizes of `Z` and `C` are indeed quite different:
 
 ```julia
 julia> sizeof(Z)
@@ -64,8 +63,8 @@ julia> sizeof(C)
 
 These numbers may depend on the architecture (here a 64-bit processor).
 
-Thanks to in-lining of functions and optimizations, a zipped array may also be
-faster.  For instance, with the arrays `C` and `Z` defined above:
+Thanks to the in-lining of functions and optimizations, a zipped array may also
+be faster.  For instance, with the arrays `C` and `Z` defined above:
 
 ```julia
 using BenchmarkTools
