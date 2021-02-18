@@ -31,13 +31,14 @@ end
 
     # Zip 1 array.
     Z = ZippedArray(D)
-    @test IndexStyle(Z) == IndexStyle(D)
+    @test IndexStyle(Z) === IndexStyle(D)
     @test eltype(Z) === Tuple{eltype(D)}
     @test ndims(Z) == ndims(D)
     @test size(Z) == size(D)
     @test size(Z,1) == size(D,1)
     @test axes(Z) == axes(D)
     @test axes(Z,2) == axes(D,2)
+    @test setindex!(Z, (11,), 1,2,3,1) === Z
     for i in (12, CartesianIndex(1,1,2,3))
         x = Z[i] # save values
         @test Z[i] === (D[i],)
@@ -49,13 +50,14 @@ end
 
     # Zip 2 regular arrays.
     Z = ZippedArray(A,B)
-    @test IndexStyle(Z) == IndexLinear()
+    @test IndexStyle(Z) === IndexLinear()
     @test eltype(Z) === Tuple{eltype(A),eltype(B)}
     @test ndims(Z) == ndims(A)
     @test size(Z) == size(A)
     @test size(Z,1) == size(A,1)
     @test axes(Z) == axes(A)
     @test axes(Z,2) == axes(A,2)
+    @test setindex!(Z, (7, 2.3), 2,3,1) === Z
     for i in (12, CartesianIndex(1,2,3))
         x = Z[i] # save values
         @test Z[i] === (A[i], B[i])
@@ -69,13 +71,14 @@ end
 
     # Zip 2 regular arrays and a view.
     Z = ZippedArray(A,V,C)
-    @test IndexStyle(Z) == IndexCartesian()
+    @test IndexStyle(Z) === IndexCartesian()
     @test eltype(Z) === Tuple{eltype(A),eltype(V),eltype(C)}
     @test ndims(Z) == ndims(A)
     @test size(Z) == size(A)
     @test size(Z,1) == size(A,1)
     @test axes(Z) == axes(A)
     @test axes(Z,2) == axes(A,2)
+    @test setindex!(Z, (-1, 0.3, 'x'), 1,2,3) === Z
     for i in (12, CartesianIndex(1,2,3))
         x = Z[i] # save values
         @test Z[i] === (A[i], V[i], C[i])

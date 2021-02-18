@@ -45,7 +45,8 @@ Base.IndexStyle(::Type{<:ZippedArray{T,N,L,I}}) where {T,N,L,I} = I()
     quote
         $(Expr(:meta, :inline))
         @boundscheck checkbounds(A, i)
-        @inbounds $lhs
+        @inbounds r = $lhs
+        r
     end
 end
 
@@ -56,6 +57,7 @@ end
         $(Expr(:meta, :inline))
         @boundscheck checkbounds(A, i)
         @inbounds $lhs = val
+        A
     end
 end
 
@@ -71,7 +73,8 @@ end
     quote
         $(Expr(:meta, :inline))
         @boundscheck checkbounds(A, i...)
-        @inbounds $lhs
+        @inbounds r = $lhs
+        r
     end
 end
 
@@ -82,6 +85,7 @@ end
         $(Expr(:meta, :inline))
         @boundscheck checkbounds(A, i...)
         @inbounds $lhs = val
+        A
     end
 end
 
