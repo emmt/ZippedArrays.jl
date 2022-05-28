@@ -1,8 +1,9 @@
 # Zipping Julia arrays together
 
-| **License**                     | **Build Status**                                                | **Code Coverage**                                                   |
-|:--------------------------------|:----------------------------------------------------------------|:--------------------------------------------------------------------|
-| [![][license-img]][license-url] | [![][travis-img]][travis-url] [![][appveyor-img]][appveyor-url] | [![][coveralls-img]][coveralls-url] [![][codecov-img]][codecov-url] |
+[![License][license-img]][license-url]
+[![Build Status][github-ci-img]][github-ci-url]
+[![Build Status][appveyor-img]][appveyor-url]
+[![Coverage][codecov-img]][codecov-url]
 
 `ZippedArrays` is a [Julia][julia-url] package to zip several (abstract) arrays
 together for accessing their elements simultaneously.  For instance, assuming
@@ -79,20 +80,20 @@ end
 @btime sum_first($Z) # 643.983 ns (0 allocations: 0 bytes)
 ```
 
+[doc-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[doc-stable-url]: https://emmt.github.io/ZippedArrays.jl/stable
+
 [doc-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [doc-dev-url]: https://emmt.github.io/ZippedArrays.jl/dev
 
 [license-url]: ./LICENSE.md
 [license-img]: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
 
-[travis-img]: https://travis-ci.org/emmt/ZippedArrays.jl.svg?branch=master
-[travis-url]: https://travis-ci.org/emmt/ZippedArrays.jl
+[github-ci-img]: https://github.com/emmt/ZippedArrays.jl/actions/workflows/CI.yml/badge.svg?branch=master
+[github-ci-url]: https://github.com/emmt/ZippedArrays.jl/actions/workflows/CI.yml?query=branch%3Amaster
 
 [appveyor-img]: https://ci.appveyor.com/api/projects/status/github/emmt/ZippedArrays.jl?branch=master
 [appveyor-url]: https://ci.appveyor.com/project/emmt/ZippedArrays-jl/branch/master
-
-[coveralls-img]: https://coveralls.io/repos/emmt/ZippedArrays.jl/badge.svg?branch=master&service=github
-[coveralls-url]: https://coveralls.io/github/emmt/ZippedArrays.jl?branch=master
 
 [codecov-img]: http://codecov.io/github/emmt/ZippedArrays.jl/coverage.svg?branch=master
 [codecov-url]: http://codecov.io/github/emmt/ZippedArrays.jl?branch=master
