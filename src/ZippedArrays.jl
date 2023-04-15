@@ -6,15 +6,16 @@ export ZippedArray
 const ArrayTuple{L,N} = NTuple{L,AbstractArray{<:Any,N}}
 
 """
-    ZippedArray(A,B,C,...) -> Z
+    Z = ZippedArray(A,B,C,...)
 
-yields a zipped array instance `Z` based on arrays `A`, `B`, `C`, etc.  such
-that the syntax `Z[i]` yields a tuple of values `(A[i],B[i],C[i],...)` while
-the syntax `Z[i] = (a,b,c,...)` is equivalent to `(A[i],B[i],C[i],...) =
-(a,b,c,...)`.
+builds a zipped array `Z` based on arrays `A`, `B`, `C`, etc. such that the
+syntax `Z[i]` yields a tuple of values `(A[i],B[i],C[i],...)` while the syntax
+`Z[i] = (a,b,c,...)` is equivalent to `(A[i],B[i],C[i],...) = (a,b,c,...)`.
 
 Any number of arrays can be zipped together, they must however have the same
 indices (as given by calling the `axes` method).
+
+Use the syntax `Z.args` to retrieve the arrays `A`, `B`, `C`, etc.
 
 """ ZippedArray
 
@@ -37,6 +38,27 @@ ZippedArray(args::AbstractArray{<:Any,N}...) where {N} =
                 typeof(args)}(args)
 
 ZippedArray() = error("at least one array argument must be provided")
+
+"""
+    Z = ZippedArray{Tuple{T1,T2,...}}(undef, dims...)
+
+builds an uninitialized zipped array `Z` of size `dims...` whose elements are
+tuples whose entries have types `T1`, `T2`, ...
+
+"""
+ZippedArray{T}(::UndefInitializer, dims::Integer...) where {T<:Tuple} =
+    ZippedArray{T}(undef, dims)
+ZippedArray{T}(::UndefInitializer, dims::Tuple{Vararg{Integer}}) where {T<:Tuple} =
+    ZippedArray{T}(undef, map(Int, dims))
+ZippedArray{T}(::UndefInitializer, dims::Dims{N}) where {T<:Tuple,N} =
+    ZippedArray{T,N,length(T.parameters)}(undef, dims)
+function ZippedArray{T,N,L}(::UndefInitializer, dims::Dims{N}) where {T<:Tuple,N,L}
+    L == length(T.parameters) || throw(ArgumentError(
+        "incompatible type parameter L, gor $L, should be $(length(T.parameters))"))
+    args = ntuple(i -> Array{T.parameters[i],N}(undef, dims), Val(L))
+    S = Tuple{ntuple(i -> Array{T.parameters[i],N}, Val(L))...}
+    return ZippedArray{T,N,L,true,S}(args)
+end
 
 Base.length(A::ZippedArray) = length(A.args[1])
 

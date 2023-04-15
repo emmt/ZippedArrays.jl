@@ -21,6 +21,22 @@ builds a zipped array instance `Z` such that the syntax `Z[i]` yields the
 Any number of arrays can be zipped together, they must however have the same
 indices (as returned by the `axes` method).
 
+To build an uninitialized zipped array of size `dims` whose elements are tuples
+of items of types `T1`, `T2`, etc., call:
+
+```julia
+Z = ZippedArray{Tuple{T1,T2,...}}(undef, dims)
+```
+
+For example:
+
+```julia
+Z = ZippedArray{Tuple{Int,Float64}}(undef, 2, 3, 4)
+```
+
+builds a 3-dimensional array of size `(2,3,4)` and whose elements are 2-tuples
+of type `Tuple{Int,Float64}`.
+
 Compared to the `zip` function which only provides means to iterate through its
 arguments, a zipped array can be accessed in random order and for reading and
 writing.  This makes zipped arrays useful for multi-key sorting.  For instance:

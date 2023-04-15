@@ -29,8 +29,27 @@ end
     @test_throws DimensionMismatch ZippedArray(A,E)
     @test all_match(nothing, cos)
 
+    # Create uninitialized zipped arrays.
+    types = (Int16,)
+    Z = @inferred ZippedArray{Tuple{types...}}(undef, map(Int16, dims)...)
+    @test IndexStyle(Z) === IndexLinear()
+    @test eltype(Z) === Tuple{types...}
+    @test ndims(Z) == length(dims)
+    @test size(Z) == dims
+    @test [x isa Array{types[i],length(dims)} for (i,x) in enumerate(Z.args)] == trues(length(types))
+    @test [size(x) == dims for x in Z.args] == trues(length(types))
+    types = (Int16,Float32,Char)
+    Z = @inferred ZippedArray{Tuple{types...}}(undef, dims)
+    @test IndexStyle(Z) === IndexLinear()
+    @test eltype(Z) === Tuple{types...}
+    @test ndims(Z) == length(dims)
+    @test size(Z) == dims
+    @test [x isa Array{types[i],length(dims)} for (i,x) in enumerate(Z.args)] == trues(length(types))
+    @test [size(x) == dims for x in Z.args] == trues(length(types))
+
     # Zip 1 array.
-    Z = ZippedArray(D)
+    Z = @inferred ZippedArray(D)
+    @test Z.args === (D,)
     @test IndexStyle(Z) === IndexStyle(D)
     @test eltype(Z) === Tuple{eltype(D)}
     @test ndims(Z) == ndims(D)
@@ -49,7 +68,8 @@ end
     @test_throws BoundsError Z[-1]
 
     # Zip 2 regular arrays.
-    Z = ZippedArray(A,B)
+    Z = @inferred ZippedArray(A,B)
+    @test Z.args === (A,B,)
     @test IndexStyle(Z) === IndexLinear()
     @test eltype(Z) === Tuple{eltype(A),eltype(B)}
     @test ndims(Z) == ndims(A)
@@ -70,7 +90,8 @@ end
     @test_throws BoundsError Z[-1]
 
     # Zip 2 regular arrays and a view.
-    Z = ZippedArray(A,V,C)
+    Z = @inferred ZippedArray(A,V,C)
+    @test Z.args === (A,V,C,)
     @test IndexStyle(Z) === IndexCartesian()
     @test eltype(Z) === Tuple{eltype(A),eltype(V),eltype(C)}
     @test ndims(Z) == ndims(A)
