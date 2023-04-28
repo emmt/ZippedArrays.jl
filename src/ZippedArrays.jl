@@ -183,7 +183,7 @@ function Base.resize!(A::ZippedVector{<:Any,L}, n::Integer) where {L}
         catch err
             # Restore previous length.
             for i in 1:L
-                length(A.arg[i]) == oldlen && resize!(A.args[i], oldlen)
+                length(A.args[i]) == oldlen || resize!(A.args[i], oldlen)
             end
             rethrow(err)
         end

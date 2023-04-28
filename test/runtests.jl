@@ -183,6 +183,10 @@ end
     a = rand(Bool, n)
     b = rand(Float32, n)
     c = rand(Int16, n)
+    let Z = ZippedVector(a,b,c,1:n)
+        @test_throws Exception resize!(Z, n + 50)
+        @test map(length, Z.args) == (n,n,n,n)
+    end
     Z = @inferred sizehint!(ZippedVector(a,b,c), n + 50)
     @test [(a[i],b[i],c[i]) for i in 1:n] == Z
     x = (rand(eltype(a)), rand(eltype(b)), rand(eltype(c)))
