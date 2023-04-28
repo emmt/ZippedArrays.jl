@@ -125,13 +125,91 @@ end
     @test map(x -> x[3], Z) == C
     @test_throws BoundsError Z[1,2,-1]
 
-    # This works for vectors.
-    n = 23
+    # Test `copy`.
+    let X = @inferred copy(Z)
+        @test isa(X, ZippedArray)
+        @test eltype(X) === eltype(Z)
+        @test axes(X) === axes(Z)
+        @test X == Z
+    end
+
+    # Test `deepcopy`.
+    let X = @inferred deepcopy(Z)
+        @test isa(X, ZippedArray)
+        @test eltype(X) === eltype(Z)
+        @test axes(X) === axes(Z)
+        @test X == Z
+    end
+
+    # Test `similar`.
+    let X = @inferred similar(Z)
+        @test isa(X, ZippedArray)
+        @test eltype(X) === eltype(Z)
+        @test axes(X) === axes(Z)
+    end
+    let new_dims = (Int16(3), Int8(4))
+        let X = @inferred similar(Z, new_dims)
+            @test isa(X, ZippedArray)
+            @test eltype(X) === eltype(Z)
+            @test size(X) == new_dims
+        end
+        let X = @inferred similar(Z, new_dims...)
+            @test isa(X, ZippedArray)
+            @test eltype(X) === eltype(Z)
+            @test size(X) == new_dims
+        end
+    end
+    let new_types = Tuple{Int16,Float32}, X = @inferred similar(Z, new_types)
+        @test isa(X, ZippedArray)
+        @test eltype(X) === new_types
+        @test size(X) == size(Z)
+    end
+    let new_dims = (Int16(3), Int8(4)), new_types = Tuple{Float32,Char}
+        let X = @inferred similar(Z, new_types, new_dims)
+            @test isa(X, ZippedArray)
+            @test eltype(X) === new_types
+            @test size(X) == new_dims
+        end
+        let X = @inferred similar(Z, new_types, new_dims...)
+            @test isa(X, ZippedArray)
+            @test eltype(X) === new_types
+            @test size(X) == new_dims
+        end
+    end
+
+    # Tests on zipped vectors.
+    n = 17
     a = rand(Bool, n)
     b = rand(Float32, n)
     c = rand(Int16, n)
-    @test [(a[i],b[i],c[i]) for i in 1:n] == ZippedArray(a,b,c)
+    Z = @inferred sizehint!(ZippedVector(a,b,c), n + 50)
+    @test [(a[i],b[i],c[i]) for i in 1:n] == Z
+    x = (rand(eltype(a)), rand(eltype(b)), rand(eltype(c)))
+    @test push!(Z, x) === Z
+    @test length(Z) == n + 1
+    @test Z[end] == x
+    x = [(rand(eltype(a)), rand(eltype(b)), rand(eltype(c))) for i in 1:4]
+    n = length(Z)
+    @test append!(Z, x) === Z
+    @test length(Z) == n + length(x)
+    @test Z[end-length(x)+1:end] == x
 
+    # Test sorting (works for vectors).
+    # Neither a nor b shall change for out-of-place sort.
+    aref = copy(a);
+    bref = copy(b);
+    Z = @inferred sort(ZippedVector(a, b));
+    @test Z isa ZippedVector
+    @test aref == a
+    @test bref == b
+    let a = Z.args[1], b = Z.args[2]
+        flag = true
+        for i in 2:n
+            flag &= ((a[i-1] < a[i])|((a[i-1] == a[i])&(b[i-1] <= b[i])))
+        end
+        @test flag
+    end
+    # In-place sort shall result in a and b being sorted.
     sort!(ZippedArray(a,b);
           lt = (x,y) -> ifelse(x[1] == y[1], x[2] < y[2], x[1] < y[1]))
     flag = true

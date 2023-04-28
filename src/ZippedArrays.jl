@@ -5,6 +5,8 @@ export
     ZippedVector,
     ZippedMatrix
 
+using Base: IteratorSize, HasLength, HasShape, to_shape
+
 # Alias for a tuple of arrays.
 const ArrayTuple{L,N} = NTuple{L,AbstractArray{<:Any,N}}
 
@@ -147,6 +149,85 @@ end
                                   A::ZippedArray{T,N,L},
                                   i::Vararg{Int,N}) where {T,N,L}
     checkbounds(Bool, A.args[1], i...)
+end
+
+Base.copy(A::ZippedArray) = ZippedArray(map(copy, A.args))
+
+Base.deepcopy(A::ZippedArray) = ZippedArray(map(deepcopy, A.args))
+
+Base.similar(A::ZippedArray) = ZippedArray(map(similar, A.args))
+
+Base.similar(A::ZippedArray, dims::Integer...) =
+    similar(A, to_shape(dims))
+
+Base.similar(A::ZippedArray, ::Type{T}, dims::Integer...) where {T} =
+    similar(A, T, to_shape(dims))
+
+Base.similar(A::ZippedArray{<:Any,<:Any,L}, dims::Dims{N}) where {N,L} =
+    ZippedArray(ntuple(i -> similar(A.args[i], dims), Val(L)))
+
+Base.similar(A::ZippedArray, ::Type{T}) where {T<:Tuple} =
+    ZippedArray{T}(undef, size(A))
+
+Base.similar(A::ZippedArray, ::Type{T}, dims::Dims) where {T<:Tuple} =
+    ZippedArray{T}(undef, dims)
+
+function Base.resize!(A::ZippedVector{<:Any,L}, n::Integer) where {L}
+    newlen = Int(n)
+    oldlen = length(A)
+    if newlen != oldlen
+        try
+            for i in 1:L
+                resize!(A.args[i], newlen)
+            end
+        catch err
+            # Restore previous length.
+            for i in 1:L
+                length(A.arg[i]) == oldlen && resize!(A.args[i], oldlen)
+            end
+            rethrow(err)
+        end
+    end
+    return A
+end
+
+function Base.sizehint!(A::ZippedVector{<:Any,L}, n::Integer) where {L}
+    len = Int(n)
+    try
+        for i in 1:L
+            sizehint!(A.args[i], len)
+        end
+    catch err
+        rethrow(err)
+    end
+    return A
+end
+
+function Base.push!(A::ZippedVector, x)
+    resize!(A, length(A) + 1)
+    @inbounds A[end] = x
+    return A
+end
+
+function Base.append!(A::ZippedVector, iter)
+    if IteratorSize(iter) isa Union{HasLength,HasShape}
+        n = length(iter)
+        if n > 0
+            i = lastindex(A)
+            resize!(A, length(A) + n)
+            @inbounds for x in iter
+                A[i += 1] = x
+            end
+        end
+    else
+        n = length(A)
+        i = lastindex(A)
+        @inbounds for x in iter
+            resize!(A, n += 1)
+            A[i += 1] = x
+        end
+    end
+    return A
 end
 
 """
