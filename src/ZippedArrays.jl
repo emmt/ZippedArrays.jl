@@ -158,7 +158,7 @@ yields whether `f(arg) == val` for all `arg ∈ args`.
 all_match(val, f::Function) = true
 all_match(val, f::Function, A) = f(A) == val
 @inline all_match(val, f::Function, A, B...) =
-    all_match(val, f, A) && all_match(val, f::Function, B...)
+    all_match(val, f, A) && all_match(val, f, B...)
 
 """
     get_index_style(A...) -> IndexLinear() or IndexCartesian()
