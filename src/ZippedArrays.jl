@@ -5,7 +5,7 @@ export
     ZippedVector,
     ZippedMatrix
 
-using Base: IteratorSize, HasLength, HasShape, to_shape
+using Base: Fix1, Fix2, IteratorSize, HasLength, HasShape, to_shape
 
 # Alias for a tuple of arrays.
 const ArrayTuple{L,N} = NTuple{L,AbstractArray{<:Any,N}}
@@ -191,15 +191,8 @@ function Base.resize!(A::ZippedVector{<:Any,L}, n::Integer) where {L}
     return A
 end
 
-function Base.sizehint!(A::ZippedVector{<:Any,L}, n::Integer) where {L}
-    len = Int(n)
-    try
-        for i in 1:L
-            sizehint!(A.args[i], len)
-        end
-    catch err
-        rethrow(err)
-    end
+function Base.sizehint!(A::ZippedVector, n::Integer)
+    map(Fix2(sizehint!, Int(n)), A.args)
     return A
 end
 

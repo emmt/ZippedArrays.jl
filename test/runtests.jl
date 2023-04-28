@@ -188,6 +188,7 @@ Base.iterate(iter::MyIterator{T1,T2,T3}, state = 0) where {T1,T2,T3} =
     a = rand(Bool, n)
     b = rand(Float32, n)
     c = rand(Int16, n)
+    @test_throws Exception sizehint!(ZippedVector(a,b,c,1:n), n + 50)
     let Z = ZippedVector(a,b,c,1:n)
         @test_throws Exception resize!(Z, n + 50)
         @test map(length, Z.args) == (n,n,n,n)
