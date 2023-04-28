@@ -12,6 +12,11 @@ function generate_array(::Type{T}, dims::Dims{N}) where {T,N}
     return A
 end
 
+struct MyIterator{T1,T2,T3} end
+Base.IteratorSize(::Type{<:MyIterator}) = Base.SizeUnknown()
+Base.iterate(iter::MyIterator{T1,T2,T3}, state = 0) where {T1,T2,T3} =
+    state < 5 ? ((rand(T1),rand(T2),rand(T3)), state+1) : nothing
+
 @testset "zipped arrays" begin
     dims = (2,3,4)
     A = generate_array(Int32, dims)
@@ -198,6 +203,11 @@ end
     @test append!(Z, x) === Z
     @test length(Z) == n + length(x)
     @test Z[end-length(x)+1:end] == x
+    let iter = MyIterator{eltype(a),eltype(b),eltype(c)}()
+        n = length(Z)
+        @inferred append!(Z, iter)
+        @test length(Z) == n + 5
+    end
 
     # Test sorting (works for vectors).
     # Neither a nor b shall change for out-of-place sort.
