@@ -1,6 +1,9 @@
 module ZippedArrays
 
-export ZippedArray
+export
+    ZippedArray,
+    ZippedVector,
+    ZippedMatrix
 
 # Alias for a tuple of arrays.
 const ArrayTuple{L,N} = NTuple{L,AbstractArray{<:Any,N}}
@@ -32,12 +35,22 @@ end
 # Alias for zipped arrays with fast linear indexing.
 const FastZippedArray{T,N,L,S} = ZippedArray{T,N,L,true,S}
 
-ZippedArray(args::AbstractArray{<:Any,N}...) where {N} =
-    ZippedArray{Tuple{map(eltype,args)...}, N, length(args),
-                get_index_style(args...) === IndexLinear(),
-                typeof(args)}(args)
+ZippedArray(args::AbstractArray{<:Any,N}...) where {N} = ZippedArray(args)
+ZippedArray(args::S) where {L,N,S<:ArrayTuple{L,N}} =
+    ZippedArray{Tuple{map(eltype,args)...}, N, L,
+                get_index_style(args...) === IndexLinear(), S}(args)
 
 ZippedArray() = error("at least one array argument must be provided")
+
+for (f, n) in ((:ZippedVector, 1), (:ZippedMatrix, 2))
+    @eval begin
+        const $f{T,L,I,S<:ArrayTuple{L,$n}} = ZippedArray{T,$n,L,I,S}
+        $f(args::AbstractVector{<:Any}...) = ZippedVector(args)
+        $f(args::S) where {L,S<:ArrayTuple{L,$n}} =
+            ZippedArray{Tuple{map(eltype,args)...}, $n, L,
+                        get_index_style(args...) === IndexLinear(), S}(args)
+    end
+end
 
 """
     Z = ZippedArray{Tuple{T1,T2,...}}(undef, dims...)
@@ -52,6 +65,14 @@ ZippedArray{T}(::UndefInitializer, dims::Tuple{Vararg{Integer}}) where {T<:Tuple
     ZippedArray{T}(undef, map(Int, dims))
 ZippedArray{T}(::UndefInitializer, dims::Dims{N}) where {T<:Tuple,N} =
     ZippedArray{T,N,length(T.parameters)}(undef, dims)
+
+ZippedArray{T,N}(::UndefInitializer, dims::Integer...) where {T<:Tuple,N} =
+    ZippedArray{T,N}(undef, dims)
+ZippedArray{T,N}(::UndefInitializer, dims::Tuple{Vararg{Integer}}) where {T<:Tuple,N} =
+    ZippedArray{T,N}(undef, map(Int, dims))
+ZippedArray{T,N}(::UndefInitializer, dims::Dims{N}) where {T<:Tuple,N} =
+    ZippedArray{T,N,length(T.parameters)}(undef, dims)
+
 function ZippedArray{T,N,L}(::UndefInitializer, dims::Dims{N}) where {T<:Tuple,N,L}
     L == length(T.parameters) || throw(ArgumentError(
         "incompatible type parameter L, gor $L, should be $(length(T.parameters))"))

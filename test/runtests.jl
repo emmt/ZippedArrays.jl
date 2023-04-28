@@ -30,22 +30,34 @@ end
     @test all_match(nothing, cos)
 
     # Create uninitialized zipped arrays.
-    types = (Int16,)
-    Z = @inferred ZippedArray{Tuple{types...}}(undef, map(Int16, dims)...)
-    @test IndexStyle(Z) === IndexLinear()
-    @test eltype(Z) === Tuple{types...}
-    @test ndims(Z) == length(dims)
-    @test size(Z) == dims
-    @test [x isa Array{types[i],length(dims)} for (i,x) in enumerate(Z.args)] == trues(length(types))
-    @test [size(x) == dims for x in Z.args] == trues(length(types))
-    types = (Int16,Float32,Char)
-    Z = @inferred ZippedArray{Tuple{types...}}(undef, dims)
-    @test IndexStyle(Z) === IndexLinear()
-    @test eltype(Z) === Tuple{types...}
-    @test ndims(Z) == length(dims)
-    @test size(Z) == dims
-    @test [x isa Array{types[i],length(dims)} for (i,x) in enumerate(Z.args)] == trues(length(types))
-    @test [size(x) == dims for x in Z.args] == trues(length(types))
+    let types = (Int16,), Z = @inferred ZippedArray{Tuple{types...}}(undef, map(Int16, dims)...)
+        @test IndexStyle(Z) === IndexLinear()
+        @test eltype(Z) === Tuple{types...}
+        @test ndims(Z) == length(dims)
+        @test size(Z) == dims
+        @test [x isa Array{types[i],length(dims)} for (i,x) in enumerate(Z.args)] == trues(length(types))
+        @test [size(x) == dims for x in Z.args] == trues(length(types))
+    end
+    let types = (Int16,Float32,Char), Z = @inferred ZippedArray{Tuple{types...}}(undef, dims)
+        @test IndexStyle(Z) === IndexLinear()
+        @test eltype(Z) === Tuple{types...}
+        @test ndims(Z) == length(dims)
+        @test size(Z) == dims
+        @test [x isa Array{types[i],length(dims)} for (i,x) in enumerate(Z.args)] == trues(length(types))
+        @test [size(x) == dims for x in Z.args] == trues(length(types))
+    end
+    let types = (Int16,Char), dims = (Int16(5),), Z = @inferred ZippedVector{Tuple{types...}}(undef, dims...)
+        @test IndexStyle(Z) === IndexLinear()
+        @test eltype(Z) === Tuple{types...}
+        @test ndims(Z) == length(dims)
+        @test size(Z) == dims
+    end
+    let types = (Char,UInt8), dims = (Int16(2),Int8(3)), Z = @inferred ZippedMatrix{Tuple{types...}}(undef, dims...)
+        @test IndexStyle(Z) === IndexLinear()
+        @test eltype(Z) === Tuple{types...}
+        @test ndims(Z) == length(dims)
+        @test size(Z) == dims
+    end
 
     # Zip 1 array.
     Z = @inferred ZippedArray(D)
