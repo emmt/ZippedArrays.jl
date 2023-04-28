@@ -153,7 +153,8 @@ end
             @test eltype(X) === eltype(Z)
             @test size(X) == new_dims
         end
-        let X = @inferred similar(Z, new_dims...)
+        # FIXME: @inferred is broken below for Julia < 1.7
+        let X = VERSION < v"1.7" ? similar(Z, new_dims...) : @inferred similar(Z, new_dims...)
             @test isa(X, ZippedArray)
             @test eltype(X) === eltype(Z)
             @test size(X) == new_dims
