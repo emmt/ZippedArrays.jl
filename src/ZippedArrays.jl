@@ -131,7 +131,7 @@ end
         $(Expr(:meta, :inline))
         @boundscheck checkbounds(A, i...)
         @inbounds r = $lhs
-        r
+        return r
     end
 end
 
@@ -142,7 +142,7 @@ end
         $(Expr(:meta, :inline))
         @boundscheck checkbounds(A, i...)
         @inbounds $lhs = val
-        A
+        return A
     end
 end
 
