@@ -6,7 +6,7 @@
 [![Coverage][codecov-img]][codecov-url]
 
 `ZippedArrays` is a [Julia][julia-url] package to zip several (abstract) arrays
-together for accessing their elements simultaneously.  For instance, assuming
+together for accessing their elements simultaneously. For instance, assuming
 that `A`, `B` and `C` are 3 Julia arrays, then:
 
 ```julia
@@ -39,7 +39,7 @@ of type `Tuple{Int,Float64}`.
 
 Compared to the `zip` function which only provides means to iterate through its
 arguments, a zipped array can be accessed in random order and for reading and
-writing.  This makes zipped arrays useful for multi-key sorting.  For instance:
+writing. This makes zipped arrays useful for multi-key sorting. For instance:
 
 ```julia
 sort!(ZippedArray(A,B);
@@ -51,7 +51,7 @@ increasing order and, in case of equality, the values in `B` are in increasing
 order.
 
 A zipped array is a simple immutable structure wrapped around the arguments of
-`ZippedArray` so zipped arrays are almost costless to build.  Below is an
+`ZippedArray` so zipped arrays are almost costless to build. Below is an
 example of how to build an array `C` whose elements are pairs of values from
 `A` and `B` and a zipped array `Z` also built from `A` and `B`:
 
@@ -66,7 +66,7 @@ C == Z # yields true
 ```
 
 The comparison `C == Z` shows that the two arrays are virtually the same
-(although not the same object, that is `C !== Z`).  Building `Z` however
+(although not the same object, that is `C !== Z`). Building `Z` however
 requires no copy of array elements and hardly requires additional memory, the
 sizes of `Z` and `C` are indeed quite different:
 
@@ -81,7 +81,7 @@ julia> sizeof(C)
 These numbers may depend on the architecture (here a 64-bit processor).
 
 Thanks to the in-lining of functions and optimizations, a zipped array may also
-be faster.  For instance, with the arrays `C` and `Z` defined above:
+be faster. For instance, with the arrays `C` and `Z` defined above:
 
 ```julia
 using BenchmarkTools
