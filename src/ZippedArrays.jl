@@ -34,9 +34,6 @@ struct ZippedArray{T,N,L,I,S<:ArrayTuple{L,N}} <: AbstractArray{T,N}
     args::S
 end
 
-# Alias for zipped arrays with fast linear indexing.
-const FastZippedArray{T,N,L,S} = ZippedArray{T,N,L,true,S}
-
 ZippedArray(args::AbstractArray{<:Any,N}...) where {N} = ZippedArray(args)
 ZippedArray(args::S) where {L,N,S<:ArrayTuple{L,N}} =
     ZippedArray{Tuple{map(eltype,args)...}, N, L,
@@ -92,8 +89,12 @@ Base.axes1(A::ZippedArray) = Base.axes1(A.args[1])
 Base.axes(A::ZippedArray) = axes(A.args[1])
 Base.axes(A::ZippedArray, i::Integer) = axes(A.args[1], i)
 
+# Aliases for zipped arrays with fast (linear) and slow (Cartesian) indexing.
+const FastZippedArray{T,N,L,S} = ZippedArray{T,N,L,true,S}
+const SlowZippedArray{T,N,L,S} = ZippedArray{T,N,L,false,S}
+
 Base.IndexStyle(::Type{<:FastZippedArray}) = IndexLinear()
-Base.IndexStyle(::Type{<:ZippedArray}) = IndexCartesian()
+Base.IndexStyle(::Type{<:SlowZippedArray}) = IndexCartesian()
 
 @generated function Base.getindex(A::FastZippedArray{T,N,L},
                                   i::Int) where {T,N,L}
@@ -123,7 +124,7 @@ end
     checkbounds(Bool, A.args[1], i)
 end
 
-@generated function Base.getindex(A::ZippedArray{T,N,L},
+@generated function Base.getindex(A::SlowZippedArray{T,N,L},
                                   i::Vararg{Int,N}) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i...]), Val(L))...)
     quote
@@ -134,7 +135,7 @@ end
     end
 end
 
-@generated function Base.setindex!(A::ZippedArray{T,N,L},
+@generated function Base.setindex!(A::SlowZippedArray{T,N,L},
                                    val, i::Vararg{Int,N}) where {T,N,L}
     lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i...]), Val(L))...)
     quote
@@ -146,7 +147,7 @@ end
 end
 
 @inline function Base.checkbounds(::Type{Bool},
-                                  A::ZippedArray{T,N,L},
+                                  A::SlowZippedArray{T,N,L},
                                   i::Vararg{Int,N}) where {T,N,L}
     checkbounds(Bool, A.args[1], i...)
 end

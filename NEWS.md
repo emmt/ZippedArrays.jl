@@ -1,5 +1,10 @@
 # User visible changes in `ZippedArrays`
 
+## Version 0.1.4
+
+- Fix signature for base abstract array methods (`getindex`, `setindex!`, etc.)
+  to correctly dispatch upon fast (linear) and slow (Cartesian) indexing.
+
 ## Version 0.1.3
 
 - Extend methods `append!`, `copy`, `deepcopy`, `push!`, `resize!`, `similar`,
