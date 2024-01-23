@@ -67,9 +67,11 @@ the default implementation which is:
     T(x...)         # otherwise (i.e., call constructor)
 
 """
-@inline build(::Type{T}, args::Tuple) where {T} = T(args...)
-@inline build(::Type{T}, args::T) where {T<:Tuple} = args
-@inline build(::Type{T}, args::Tuple) where {T<:Tuple} = convert(T, args)
+@inline build(::Type{T}, args...) where {T} = build(T, args)
+@inline build(::Type{T}, x::T) where {T<:Tuple} = x
+@inline build(::Type{T}, x::Tuple) where {T<:Tuple} = convert(T, x)
+@inline build(::Type{T}, x::T) where {T} = x
+@inline build(::Type{T}, x::Tuple) where {T} = T(x...)
 
 # Alias for a tuple of arrays.
 const ArrayTuple{L,N} = NTuple{L,AbstractArray{<:Any,N}}
