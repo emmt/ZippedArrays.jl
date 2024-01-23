@@ -261,11 +261,11 @@ end
 
 @noinline function throw_indices_mismatch(show_axes::Bool, A::AbstractArray...)
     io = IOBuffer()
-    write(io, "all arguments of `ZippedArray` must have the same ",
-          (show_axes ? "axes" : "shape"), ", got ")
+    write(io, "all arguments of `ZippedArray` must have the same ")
+    write(io, show_axes ? "indices, got axes " : "shape, got shapes ")
     m = length(A)
     for i in 1:m
-        write(io, (i == 1 ? "(" : i == m ? " and (" : ", )"))
+        write(io, (i == 1 ? "(" : i == m ? " and (" : ", ("))
         if show_axes
             inds = axes(A[i])
             n = length(inds)
