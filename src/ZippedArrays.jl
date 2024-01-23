@@ -7,6 +7,70 @@ export
 
 using Base: Fix1, Fix2, IteratorSize, HasLength, HasShape, to_shape
 
+"""
+    ZippedArrays.destruct(x) -> tuple
+
+yields a tuple of the fields of `x` if `x` is a structured object, or just
+returns `x` if `x` is a tuple.
+
+`x` may also be a structure or tuple type.
+
+See also [`ZippedArrays.build`](@ref).
+
+"""
+destruct(x::Tuple) = x
+@generated function destruct(x::T) where {T}
+    expr = Expr(:tuple, ntuple(i -> :(getfield(x, $i)), Val(fieldcount(T)))...)
+    quote
+        $(Expr(:meta, :inline))
+        return $expr
+    end
+end
+destruct(::Type{T}) where {T<:Tuple} = T
+destruct(::Type{T}) where {T} = Tuple{ntuple(i -> fieldtype(T, i), Val(fieldcount(T)))...}
+
+"""
+    ZippedArrays.destruct(x, i)
+
+yields `i`-th field of `x` if `x` is a structured object, or just `i`-th entry
+of `x` if `x` is a tuple.
+
+`x` may also be a structure or tuple type.
+
+"""
+destruct(x::Tuple, i::Int) = getindex(x, i)
+destruct(x, i::Int) = getfield(x, i)
+destruct(::Type{T}, i::Int) where {T<:Tuple} = T.parameters[i]
+destruct(::Type{T}, i::Int) where {T} = fieldtype(T, i)
+
+"""
+    ZippedArrays.destruct_count(T)
+
+yields the number of fields of `T` if `T` is a structure type, or the number of
+entries in `T` if `T` is a tuple type.
+
+"""
+destruct_count(::Type{T}) where {T<:Tuple} = length(T.parameters)
+destruct_count(::Type{T}) where {T} = fieldcount(T)
+
+"""
+    ZippedArrays.build(T, args)
+
+builds an object of type `T` whose fields are the entries of the tuple `args`.
+
+This method reverses the effects of [`ZippedArrays.destruct`](@ref).
+
+The method may be extended by callers to implement a different behavior than
+the default implementation which is:
+
+    convert(T, args)   # if `T` is a tuple type
+    T(args...)         # otherwise (i.e., call constructor)
+
+"""
+@inline build(::Type{T}, args::Tuple) where {T} = T(args...)
+@inline build(::Type{T}, args::T) where {T<:Tuple} = args
+@inline build(::Type{T}, args::Tuple) where {T<:Tuple} = convert(T, args)
+
 # Alias for a tuple of arrays.
 const ArrayTuple{L,N} = NTuple{L,AbstractArray{<:Any,N}}
 
@@ -36,8 +100,12 @@ end
 
 ZippedArray(args::AbstractArray{<:Any,N}...) where {N} = ZippedArray(args)
 ZippedArray(args::S) where {L,N,S<:ArrayTuple{L,N}} =
-    ZippedArray{Tuple{map(eltype,args)...}, N, L,
+    ZippedArray{Tuple{map(eltype, args)...}, N, L,
                 get_index_style(args...) === IndexLinear(), S}(args)
+
+ZippedArray{T}(args::AbstractArray{<:Any,N}...) where {T,N} = ZippedArray{T}(args)
+ZippedArray{T}(args::S) where {T,L,N,S<:ArrayTuple{L,N}} =
+    ZippedArray{T,N,L,get_index_style(args...) === IndexLinear(), S}(args)
 
 ZippedArray() = error("at least one array argument must be provided")
 
@@ -58,25 +126,21 @@ builds an uninitialized zipped array `Z` of size `dims...` whose elements are
 tuples whose entries have types `T1`, `T2`, ...
 
 """
-ZippedArray{T}(::UndefInitializer, dims::Integer...) where {T<:Tuple} =
+ZippedArray{T}(::UndefInitializer, dims::Integer...) where {T} =
     ZippedArray{T}(undef, dims)
-ZippedArray{T}(::UndefInitializer, dims::Tuple{Vararg{Integer}}) where {T<:Tuple} =
-    ZippedArray{T}(undef, map(Int, dims))
-ZippedArray{T}(::UndefInitializer, dims::Dims{N}) where {T<:Tuple,N} =
-    ZippedArray{T,N,length(T.parameters)}(undef, dims)
-
-ZippedArray{T,N}(::UndefInitializer, dims::Integer...) where {T<:Tuple,N} =
+ZippedArray{T}(::UndefInitializer, dims::NTuple{N,Integer}) where {T,N} =
     ZippedArray{T,N}(undef, dims)
-ZippedArray{T,N}(::UndefInitializer, dims::Tuple{Vararg{Integer}}) where {T<:Tuple,N} =
-    ZippedArray{T,N}(undef, map(Int, dims))
-ZippedArray{T,N}(::UndefInitializer, dims::Dims{N}) where {T<:Tuple,N} =
-    ZippedArray{T,N,length(T.parameters)}(undef, dims)
 
-function ZippedArray{T,N,L}(::UndefInitializer, dims::Dims{N}) where {T<:Tuple,N,L}
-    L == length(T.parameters) || throw(ArgumentError(
-        "incompatible type parameter L, gor $L, should be $(length(T.parameters))"))
-    args = ntuple(i -> Array{T.parameters[i],N}(undef, dims), Val(L))
-    S = Tuple{ntuple(i -> Array{T.parameters[i],N}, Val(L))...}
+ZippedArray{T,N}(::UndefInitializer, dims::Integer...) where {T,N} =
+    ZippedArray{T,N}(undef, dims)
+ZippedArray{T,N}(::UndefInitializer, dims::NTuple{N,Integer}) where {T,N} =
+    ZippedArray{T,N}(undef, Dims(dims))
+
+function ZippedArray{T,N}(::UndefInitializer, dims::Dims{N}) where {T,N}
+    #isconcretetype(T) || throw(ArgumentError("element type `$T` is not a concrete type"))
+    L = destruct_count(T)
+    args = ntuple(i -> Array{destruct(T,i),N}(undef, dims), Val(L))
+    S = Tuple{ntuple(i -> Array{destruct(T,i),N}, Val(L))...}
     return ZippedArray{T,N,L,true,S}(args)
 end
 
@@ -96,60 +160,47 @@ const SlowZippedArray{T,N,L,S} = ZippedArray{T,N,L,false,S}
 Base.IndexStyle(::Type{<:FastZippedArray}) = IndexLinear()
 Base.IndexStyle(::Type{<:SlowZippedArray}) = IndexCartesian()
 
-@generated function Base.getindex(A::FastZippedArray{T,N,L},
-                                  i::Int) where {T,N,L}
-    lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i]), Val(L))...)
-    quote
-        $(Expr(:meta, :inline))
-        @boundscheck checkbounds(A, i)
-        @inbounds r = $lhs
-        r
-    end
-end
+@generated Base.getindex(A::FastZippedArray{T,N,L}, i::Int) where {T,N,L} =
+    _encode_getindex(:T, :A, :i, L)
+@generated Base.getindex(A::SlowZippedArray{T,N,L}, i::Vararg{Int,N}) where {T,N,L} =
+    _encode_getindex(:T, :A, :(i...), L)
 
-@generated function Base.setindex!(A::FastZippedArray{T,N,L},
-                                   val, i::Int) where {T,N,L}
-    lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i]), Val(L))...)
-    quote
-        $(Expr(:meta, :inline))
-        @boundscheck checkbounds(A, i)
-        @inbounds $lhs = val
-        A
-    end
-end
+@generated Base.setindex!(A::FastZippedArray{T,N,L}, x, i::Int) where {T,N,L} =
+    _encode_setindex(:A, :x, :i, L)
+@generated Base.setindex!(A::SlowZippedArray{T,N,L}, x, i::Vararg{Int,N}) where {T,N,L} =
+    _encode_setindex(:A, :x, :(i...), L)
 
-@inline function Base.checkbounds(::Type{Bool},
-                                  A::FastZippedArray{T,N,L},
-                                  i::Int) where {T,N,L}
+Base.checkbounds(::Type{Bool}, A::FastZippedArray{T,N,L}, i::Int) where {T,N,L} =
     checkbounds(Bool, A.args[1], i)
-end
-
-@generated function Base.getindex(A::SlowZippedArray{T,N,L},
-                                  i::Vararg{Int,N}) where {T,N,L}
-    lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i...]), Val(L))...)
-    quote
-        $(Expr(:meta, :inline))
-        @boundscheck checkbounds(A, i...)
-        @inbounds r = $lhs
-        return r
-    end
-end
-
-@generated function Base.setindex!(A::SlowZippedArray{T,N,L},
-                                   val, i::Vararg{Int,N}) where {T,N,L}
-    lhs = Expr(:tuple, ntuple(j -> :(A.args[$j][i...]), Val(L))...)
-    quote
-        $(Expr(:meta, :inline))
-        @boundscheck checkbounds(A, i...)
-        @inbounds $lhs = val
-        return A
-    end
-end
-
-@inline function Base.checkbounds(::Type{Bool},
-                                  A::SlowZippedArray{T,N,L},
-                                  i::Vararg{Int,N}) where {T,N,L}
+Base.checkbounds(::Type{Bool}, A::SlowZippedArray{T,N,L}, i::Vararg{Int,N}) where {T,N,L} =
     checkbounds(Bool, A.args[1], i...)
+
+# Generate expression corresponding to the list of entries of a zipped array
+# whose name is `A` and at index expression `i`.
+_encode_list_of_entries(A::Symbol, i::Union{Integer,Symbol,Expr}, n::Int) =
+    Expr(:tuple, ntuple(j -> :($A.args[$j][$i]), Val(n))...)
+
+# Generate code for method `Base.getindex` applied to a zipped array whose name
+# is `A` and at index expression `i`.
+function _encode_getindex(T::Symbol, A::Symbol, i::Union{Integer,Symbol,Expr}, n::Int)
+    vals = _encode_list_of_entries(A, i, n)
+    return quote
+        $(Expr(:meta, :inline))
+        @boundscheck checkbounds($A, $i)
+        return @inbounds build($T, $vals)
+    end
+end
+
+# Generate code for method `Base.setindex!` applied to a zipped array whose name
+# is `A` and at index expression `i`.
+function _encode_setindex(A::Symbol, x::Symbol, i::Union{Integer,Symbol,Expr}, n::Int)
+    vals = _encode_list_of_entries(A, i, n)
+    return quote
+        $(Expr(:meta, :inline))
+        @boundscheck checkbounds($A, $i)
+        @inbounds $vals = destruct($x)
+        return $A
+    end
 end
 
 Base.copy(A::ZippedArray) = ZippedArray(map(copy, A.args))

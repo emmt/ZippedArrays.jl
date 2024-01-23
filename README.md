@@ -37,6 +37,33 @@ Z = ZippedArray{Tuple{Int,Float64}}(undef, 2, 3, 4)
 builds a 3-dimensional array of size `(2,3,4)` and whose elements are 2-tuples
 of type `Tuple{Int,Float64}`.
 
+Element type of a zipped array can also be a structure type. For example:
+
+```julia
+Z = ZippedArray{Complex{Float32}}(undef, dims)
+```
+
+creates an uninitialized array of `Complex{Float32}` elements, of size `dims`,
+and such that the real and imaginary parts are stored into two separate arrays.
+As another example:
+
+```julia
+Z = ZippedArray{Complex{Float32}}(A, B))
+```
+
+wraps arrays `A` and `B` into an abstract array of `Complex{Float32}` elements,
+of same size as `A` and `B` and such that `Z[i]` yields
+`Complex{Float32}(A[i],B[i])`.
+
+A zipped array, say `A::ZippedArray{T,N}`, enforces the type of the returned
+elements by calling `convert(T, x)` with `x` the tuple of values and if `T` is
+a tuple type, or by calling the constructor `T(x...)` if `T` is not a tuple
+type. This guarantees the type of the returned elements with no speed penalties
+when `x` has the correct type. This can be exploited to perform lazy
+conversion. If the type `T` has no constructor matching the syntax `T(x...)`,
+the method `ZippedArrays.build(::Type{T}, x)` can be specialized to yield an
+object of type `T` whose fields are given by the tuple of values `x`.
+
 Compared to the `zip` function which only provides means to iterate through its
 arguments, a zipped array can be accessed in random order and for reading and
 writing. This makes zipped arrays useful for multi-key sorting. For instance:
