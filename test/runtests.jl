@@ -17,7 +17,54 @@ Base.IteratorSize(::Type{<:MyIterator}) = Base.SizeUnknown()
 Base.iterate(iter::MyIterator{T1,T2,T3}, state = 0) where {T1,T2,T3} =
     state < 5 ? ((rand(T1),rand(T2),rand(T3)), state+1) : nothing
 
+struct MyType{A,B,C}
+    a::A
+    b::B
+    c::C
+end
+
 @testset "zipped arrays" begin
+    @testset "helper methods" begin
+        let destruct = ZippedArrays.destruct,
+            destruct_count = ZippedArrays.destruct_count,
+            build = ZippedArrays.build
+            let x = (1,2.0,'x'), T = typeof(x), y = (Int16(x[1]), Float64(x[2]), x[3])
+                @test @inferred(destruct(x)) === x
+                @test destruct(x,1) === x[1]
+                @test destruct(x,2) === x[2]
+                @test destruct(x,3) === x[3]
+                @test @inferred(destruct(T)) === T
+                @test @inferred(destruct_count(T)) === 3
+                @test destruct(T,1) === typeof(x[1])
+                @test destruct(T,2) === typeof(x[2])
+                @test destruct(T,3) === typeof(x[3])
+                @test @inferred(build(T, x)) === x
+                @test @inferred(build(T, y)) === x
+                @test @inferred(build(T, x...)) === x
+                @test @inferred(build(T, y...)) === x
+            end
+            let x = Complex{Float32}(-1, 2), T = typeof(x), y = (x.re, x.im)
+                @test @inferred(destruct(x)) === y
+                @test @inferred(destruct(x,1)) === y[1]
+                @test @inferred(destruct(x,2)) === y[2]
+                @test @inferred(destruct(T)) === typeof(y)
+                @test @inferred(destruct_count(T)) === 2
+                @test @inferred(destruct(T,1)) === typeof(y[1])
+                @test @inferred(destruct(T,2)) === typeof(y[2])
+                @test @inferred(build(T, x)) === x
+                @test @inferred(build(T, y)) === x
+                @test @inferred(build(T, x...)) === x
+                @test @inferred(build(T, y...)) === x
+            end
+        end
+        let get_index_style = ZippedArrays.get_index_style,
+            A = rand(Float32, 4, 3), B = rand(Int16, 4, 3), C = rand(Int8, 2, 3)
+            @test @inferred(get_index_style()) === IndexLinear()
+            @test @inferred(get_index_style(A, B)) === IndexLinear()
+            @test @inferred(get_index_style(view(A, 2:3, :), C)) === IndexCartesian()
+            @test_throws DimensionMismatch get_index_style(A, B, C)
+        end
+    end
     dims = (2,3,4)
     A = generate_array(Int32, dims)
     B = generate_array(Float64, dims)
@@ -29,8 +76,8 @@ Base.iterate(iter::MyIterator{T1,T2,T3}, state = 0) where {T1,T2,T3} =
     for bool in (true, false)
         @test_throws DimensionMismatch throw_indices_mismatch(bool, A, B, E)
     end
-    @test_throws ErrorException ZippedArray()
-    @test_throws MethodError ZippedArray(A,D)
+    @test_throws ArgumentError ZippedArray()
+    @test_throws DimensionMismatch ZippedArray(A,D)
     @test_throws DimensionMismatch ZippedArray(A,E)
     @test all_match(nothing, cos)
 
@@ -130,12 +177,50 @@ Base.iterate(iter::MyIterator{T1,T2,T3}, state = 0) where {T1,T2,T3} =
     @test map(x -> x[3], Z) == C
     @test_throws BoundsError Z[1,2,-1]
 
+    # Zip 3 arrays in a structured type (with no conversion and with
+    # conversion).
+    T1 = MyType{eltype(A),eltype(B),eltype(C)}
+    T2 = MyType{eltype(A),Float32,eltype(C)}
+    Z1 = @inferred(ZippedArray{T1}(undef, dims))
+    Z2 = @inferred(ZippedArray{T2}(undef, dims))
+    @test eltype(Z1) == T1
+    @test eltype(Z2) == T2
+    @test size(Z1) == dims
+    @test size(Z2) == dims
+    for i in eachindex(Z1, Z2, A, B, C)
+        Z1[i] = T1(A[i], B[i], C[i])
+        Z2[i] = T2(A[i], B[i], C[i])
+    end
+    @test Z1[3] === T1(A[3], B[3], C[3])
+    @test Z2[3] === T2(A[3], B[3], C[3])
+    let x = (-A[3], -B[2], C[2])
+        Z1[3] = T1(x...); @test Z1[3] === T1(x...)
+        Z2[3] = T2(x...); @test Z2[3] === T2(x...)
+    end
+    let x = (A[5], B[1], C[4])
+        # Setting value as a tuple is supported.
+        Z1[3] = x; @test Z1[3] === T1(x...)
+        Z2[3] = x; @test Z2[3] === T2(x...)
+    end
+
     # Test `copy`.
     let X = @inferred copy(Z)
         @test isa(X, ZippedArray)
         @test eltype(X) === eltype(Z)
         @test axes(X) === axes(Z)
         @test X == Z
+    end
+    let X = @inferred copy(Z1)
+        @test isa(X, ZippedArray)
+        @test eltype(X) === eltype(Z1)
+        @test axes(X) === axes(Z1)
+        @test X == Z1
+    end
+    let X = @inferred copy(Z2)
+        @test isa(X, ZippedArray)
+        @test eltype(X) === eltype(Z2)
+        @test axes(X) === axes(Z2)
+        @test X == Z2
     end
 
     # Test `deepcopy`.
@@ -145,12 +230,32 @@ Base.iterate(iter::MyIterator{T1,T2,T3}, state = 0) where {T1,T2,T3} =
         @test axes(X) === axes(Z)
         @test X == Z
     end
+    let X = @inferred deepcopy(Z1)
+        @test isa(X, ZippedArray)
+        @test eltype(X) === eltype(Z1)
+        @test axes(X) === axes(Z1)
+        @test X == Z1
+    end
+    let X = @inferred deepcopy(Z2)
+        @test isa(X, ZippedArray)
+        @test eltype(X) === eltype(Z2)
+        @test axes(X) === axes(Z2)
+        @test X == Z2
+    end
 
     # Test `similar`.
     let X = @inferred similar(Z)
         @test isa(X, ZippedArray)
         @test eltype(X) === eltype(Z)
         @test axes(X) === axes(Z)
+    end
+    let X = @inferred similar(Z, T1)
+        @test isa(X, ZippedArray{T1})
+        @test axes(X) === axes(Z)
+    end
+    let X = @inferred similar(Z2)
+        @test isa(X, ZippedArray{T2})
+        @test axes(X) === axes(Z2)
     end
     let new_dims = (Int16(3), Int8(4))
         let X = @inferred similar(Z, new_dims)
