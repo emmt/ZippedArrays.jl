@@ -76,7 +76,6 @@ end
     for bool in (true, false)
         @test_throws DimensionMismatch throw_indices_mismatch(bool, A, B, E)
     end
-    @test_throws ArgumentError ZippedArray()
     @test_throws DimensionMismatch ZippedArray(A,D)
     @test_throws DimensionMismatch ZippedArray(A,E)
     @test all_match(nothing, cos)
@@ -110,6 +109,15 @@ end
         @test ndims(Z) == length(dims)
         @test size(Z) == dims
     end
+
+    # Zip 0 arrays.
+    @test_throws ArgumentError ZippedArray()
+    @test_throws ArgumentError ZippedArray{Tuple{Int16,Float32}}()
+    @test_throws ArgumentError ZippedArray{Tuple{Int16,Float32},2}()
+    @test_throws ArgumentError ZippedVector()
+    @test_throws ArgumentError ZippedVector{Tuple{Int16,Float32}}()
+    @test_throws ArgumentError ZippedMatrix()
+    @test_throws ArgumentError ZippedMatrix{Tuple{Int16,Float32}}()
 
     # Zip 1 array.
     Z = @inferred ZippedArray(D)

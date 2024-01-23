@@ -133,10 +133,10 @@ ZippedArray{T,N}(args::ArrayTuple{L,N}) where {T,L,N} = ZippedArray{T}(args)
 for (f, n) in ((:ZippedVector, 1), (:ZippedMatrix, 2))
     @eval begin
         const $f{T,L,I,S<:ArrayTuple{L,$n}} = ZippedArray{T,$n,L,I,S}
-        $f(args::AbstractVector{<:Any}...) = ZippedVector(args)
-        $f(args::S) where {L,S<:ArrayTuple{L,$n}} =
-            ZippedArray{Tuple{map(eltype,args)...}, $n, L,
-                        get_index_style(args...) === IndexLinear(), S}(args)
+        $f() = throw(at_least_one_array_to_zip)
+        $f{T}() where {T} = throw(at_least_one_array_to_zip)
+        $f(args::AbstractArray...) = $f(args)
+        $f(args::Tuple{Vararg{AbstractArray}}) = $f{Tuple{map(eltype, args)...}}(args)
     end
 end
 
