@@ -100,16 +100,35 @@ struct ZippedArray{T,N,L,I,S<:ArrayTuple{L,N}} <: AbstractArray{T,N}
     args::S
 end
 
-ZippedArray(args::AbstractArray{<:Any,N}...) where {N} = ZippedArray(args)
-ZippedArray(args::S) where {L,N,S<:ArrayTuple{L,N}} =
-    ZippedArray{Tuple{map(eltype, args)...}, N, L,
-                get_index_style(args...) === IndexLinear(), S}(args)
+const at_least_one_array_to_zip = ArgumentError("there must be at least one array to zip")
+const not_same_ndims = DimensionMismatch("arrays to zip must have the same number of dimensions")
 
-ZippedArray{T}(args::AbstractArray{<:Any,N}...) where {T,N} = ZippedArray{T}(args)
-ZippedArray{T}(args::S) where {T,L,N,S<:ArrayTuple{L,N}} =
-    ZippedArray{T,N,L,get_index_style(args...) === IndexLinear(), S}(args)
+ZippedArray() = throw(at_least_one_array_to_zip)
+ZippedArray(args::AbstractArray...) = ZippedArray(args)
+ZippedArray(args::Tuple{Vararg{AbstractArray}}) = throw(not_same_ndims)
+function ZippedArray(args::S) where {L,N,S<:ArrayTuple{L,N}}
+    T = Tuple{map(eltype, args)...}
+    I = get_index_style(args...) === IndexLinear()
+    return ZippedArray{T,N,L,I,S}(args)
+end
 
-ZippedArray() = error("at least one array argument must be provided")
+ZippedArray{T}() where {T} = throw(at_least_one_array_to_zip)
+ZippedArray{T}(args::AbstractArray...) where {T} = ZippedArray{T}(args)
+ZippedArray{T}(args::Tuple{Vararg{AbstractArray}}) where {T} = throw(not_same_ndims)
+function ZippedArray{T}(args::S) where {T,L,N,S<:ArrayTuple{L,N}}
+    # We do not enforce that the number of arrays matches the number of fields
+    # is `T` is a structure type to let the caller provides its own builder.
+    !(T <: Tuple) || destruct_count(T) == L || throw(ArgumentError(
+        "number of entries in element type `$T` must match number of arguments"))
+    I = get_index_style(args...) === IndexLinear()
+    return ZippedArray{T,N,L,I,S}(args)
+end
+
+ZippedArray{T,N}() where {T,N} = throw(at_least_one_array_to_zip)
+ZippedArray{T,N}(args::AbstractArray...) where {T,N} = ZippedArray{T,N}(args)
+ZippedArray{T,N}(args::Tuple{Vararg{AbstractArray}}) where {T,N} =
+    throw(DimensionMismatch("arrays to zip must all have $N dimensions"))
+ZippedArray{T,N}(args::ArrayTuple{L,N}) where {T,L,N} = ZippedArray{T}(args)
 
 for (f, n) in ((:ZippedVector, 1), (:ZippedMatrix, 2))
     @eval begin
@@ -141,6 +160,8 @@ ZippedArray{T,N}(::UndefInitializer, dims::NTuple{N,Integer}) where {T,N} =
 function ZippedArray{T,N}(::UndefInitializer, dims::Dims{N}) where {T,N}
     #isconcretetype(T) || throw(ArgumentError("element type `$T` is not a concrete type"))
     L = destruct_count(T)
+    L > zero(L) || throw(ArgumentError(
+        "there must be at least one entry/field in element type `$T`"))
     args = ntuple(i -> Array{destruct(T,i),N}(undef, dims), Val(L))
     S = Tuple{ntuple(i -> Array{destruct(T,i),N}, Val(L))...}
     return ZippedArray{T,N,L,true,S}(args)
