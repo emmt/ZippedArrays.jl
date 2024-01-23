@@ -54,17 +54,17 @@ destruct_count(::Type{T}) where {T<:Tuple} = length(T.parameters)
 destruct_count(::Type{T}) where {T} = fieldcount(T)
 
 """
-    ZippedArrays.build(T, args)
+    ZippedArrays.build(T, x)
 
-builds an object of type `T` whose fields are the entries of the tuple `args`.
+builds an object of type `T` whose fields are the entries of the tuple `x`.
 
 This method reverses the effects of [`ZippedArrays.destruct`](@ref).
 
 The method may be extended by callers to implement a different behavior than
 the default implementation which is:
 
-    convert(T, args)   # if `T` is a tuple type
-    T(args...)         # otherwise (i.e., call constructor)
+    convert(T, x)   # if `T` is a tuple type
+    T(x...)         # otherwise (i.e., call constructor)
 
 """
 @inline build(::Type{T}, args::Tuple) where {T} = T(args...)

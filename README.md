@@ -59,14 +59,16 @@ A zipped array, say `A::ZippedArray{T,N}`, enforces the type of the returned
 elements by calling `convert(T, x)` with `x` the tuple of values and if `T` is
 a tuple type, or by calling the constructor `T(x...)` if `T` is not a tuple
 type. This guarantees the type of the returned elements with no speed penalties
-when `x` has the correct type. This can be exploited to perform lazy
-conversion. If the type `T` has no constructor matching the syntax `T(x...)`,
+when `x` needs no conversion. This can be also exploited to perform lazy
+conversion (in the above example `A` and `B` may have other element type than
+`Float32`). If the type `T` has no constructor matching the syntax `T(x...)`,
 the method `ZippedArrays.build(::Type{T}, x)` can be specialized to yield an
 object of type `T` whose fields are given by the tuple of values `x`.
 
 Compared to the `zip` function which only provides means to iterate through its
 arguments, a zipped array can be accessed in random order and for reading and
-writing. This makes zipped arrays useful for multi-key sorting. For instance:
+writing. This makes zipped arrays useful for in-place multi-key sorting. For
+instance:
 
 ```julia
 sort!(ZippedArray(A,B);
