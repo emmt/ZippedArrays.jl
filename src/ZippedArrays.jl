@@ -239,21 +239,14 @@ all_match(val, f::Function, A) = f(A) == val
     get_index_style(A...) -> IndexLinear() or IndexCartesian()
 
 yields the most efficient indexing style for accessing arrays `A...` with the
-same index.  An exception is thrown if arguments do not have the same axes.
+same index. An exception is thrown if arguments do not have the same axes.
 
 """
+get_index_style() = IndexLinear()
 get_index_style(A::AbstractArray) = IndexStyle(A)
-
-@inline get_index_style(A::AbstractArray, B::AbstractArray) =
-    get_index_style(IndexStyle(A, B), A, B)
-@inline get_index_style(A::AbstractArray, B::AbstractArray...) =
-    get_index_style(IndexStyle(A, B...), A, B...)
-
-@inline function get_index_style(I::Union{IndexLinear,IndexCartesian},
-                                 A::AbstractArray,
-                                 B::AbstractArray...)
+@inline function get_index_style(A::AbstractArray, B::AbstractArray...)
     all_match(axes(A), axes, B...) || throw_indices_mismatch(A, B...)
-    return I
+    return IndexStyle(A, B...)
 end
 
 @noinline throw_indices_mismatch(A::AbstractArray...) =
