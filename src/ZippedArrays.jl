@@ -226,26 +226,12 @@ function _encode_setindex(A::Symbol, x::Symbol, i::Union{Integer,Symbol,Expr}, n
     end
 end
 
-Base.copy(A::ZippedArray) = ZippedArray(map(copy, A.args))
+Base.copy(A::ZippedArray) = ZippedArray{eltype(A)}(map(copy, A.args))
 
-Base.deepcopy(A::ZippedArray) = ZippedArray(map(deepcopy, A.args))
+Base.deepcopy(A::ZippedArray) = ZippedArray{eltype(A)}(map(deepcopy, A.args))
 
-Base.similar(A::ZippedArray) = ZippedArray(map(similar, A.args))
-
-Base.similar(A::ZippedArray, dims::Integer...) =
-    similar(A, to_shape(dims))
-
-Base.similar(A::ZippedArray, ::Type{T}, dims::Integer...) where {T} =
-    similar(A, T, to_shape(dims))
-
-Base.similar(A::ZippedArray{<:Any,<:Any,L}, dims::Dims{N}) where {N,L} =
-    ZippedArray(ntuple(i -> similar(A.args[i], dims), Val(L)))
-
-Base.similar(A::ZippedArray, ::Type{T}) where {T<:Tuple} =
-    ZippedArray{T}(undef, size(A))
-
-Base.similar(A::ZippedArray, ::Type{T}, dims::Dims) where {T<:Tuple} =
-    ZippedArray{T}(undef, dims)
+Base.similar(A::ZippedArray, ::Type{T}, dims::Dims{N}) where {T,N} =
+    destruct_count(T) > 0 ? ZippedArray{T}(undef, dims) : Array{T}(undef, dims)
 
 function Base.resize!(A::ZippedVector{<:Any,L}, n::Integer) where {L}
     newlen = Int(n)
