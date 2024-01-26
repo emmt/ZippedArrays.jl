@@ -141,6 +141,13 @@ end
 
     # Zip 2 regular arrays.
     Z = @inferred ZippedArray(A,B)
+    @test @inferred(ZippedArray((A,B))) === Z
+    @test @inferred(ZippedArray{Tuple{eltype(A),eltype(B)}}((A,B))) === Z
+    @test @inferred(ZippedArray{Tuple{eltype(A),eltype(B)}}(A,B)) === Z
+    @test @inferred(ZippedArray{Tuple{eltype(A),eltype(B)},ndims(A)}((A,B))) === Z
+    @test_throws DimensionMismatch ZippedArray(A,view(A,:,:,2))
+    @test_throws DimensionMismatch ZippedArray{Tuple{eltype(A),eltype(A)}}(A,view(A,:,:,2))
+    @test_throws DimensionMismatch ZippedArray{Tuple{eltype(A),eltype(A)},ndims(A)}(A,view(A,:,:,2))
     @test Z.args === (A,B,)
     @test IndexStyle(Z) === IndexLinear()
     @test eltype(Z) === Tuple{eltype(A),eltype(B)}
