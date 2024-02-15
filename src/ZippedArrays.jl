@@ -117,14 +117,14 @@ function ZippedArray(args::S) where {L,N,S<:ArrayTuple{L,N}}
     return ZippedArray{T,N,L,I,S}(args)
 end
 
-ZippedArray(args...) = ZippedArray(values(args))
+ZippedArray(;args...) = ZippedArray(values(args))
 function ZippedArray(args::S) where {L,N,S<:ArrayNamedTuple{L,N}}
     T = Tuple{map(eltype, args)...}
     I = get_index_style(args...) === IndexLinear()
     return ZippedArray{T,N,L,I,S}(args)
 end
 
-ZippedArray{T}(::NamedTuple{}) where {T} = throw(at_least_one_array_to_zip)
+ZippedArray{T}() where {T} = throw(at_least_one_array_to_zip)
 ZippedArray{T}(args::AbstractArray...) where {T} = ZippedArray{T}(args)
 ZippedArray{T}(args::Tuple{Vararg{AbstractArray}}) where {T} = throw(not_same_ndims)
 function ZippedArray{T}(args::S) where {T,L,N,S<:ArrayTuple{L,N}}
@@ -146,7 +146,7 @@ function ZippedArray{T}(args::S) where {T,L,N,S<:ArrayNamedTuple{L,N}}
 end
 
 
-ZippedArray{T,N}(::NamedTuple{}) where {T,N} = throw(at_least_one_array_to_zip)
+ZippedArray{T,N}() where {T,N} = throw(at_least_one_array_to_zip)
 ZippedArray{T,N}(args::AbstractArray...) where {T,N} = ZippedArray{T,N}(args)
 ZippedArray{T,N}(args::Tuple{Vararg{AbstractArray}}) where {T,N} =
     throw(DimensionMismatch("arrays to zip must all have $N dimensions"))
