@@ -75,6 +75,7 @@ the default implementation which is:
 
 # Alias for a tuple of arrays.
 const ArrayTuple{L,N} = NTuple{L,AbstractArray{<:Any,N}}
+const ArrayNamedTuple{L,N} = NamedTuple{S,A} where {S,A<:ArrayTuple{L,N}}
 
 """
     Z = ZippedArray(A,B,C,...)
@@ -83,10 +84,14 @@ builds a zipped array `Z` based on arrays `A`, `B`, `C`, etc. such that the
 syntax `Z[i]` yields a tuple of values `(A[i],B[i],C[i],...)` while the syntax
 `Z[i] = (a,b,c,...)` is equivalent to `(A[i],B[i],C[i],...) = (a,b,c,...)`.
 
+The array can be named eg `Z = ZippedArray(A=A,B=B,C=C,...)`
+where `Z[i]`  yields a named tuple of values `(A=A[i],B=B[i],C=C[i],...)`
+
 Any number of arrays can be zipped together, they must however have the same
 indices (as given by calling the `axes` method).
 
 Use the syntax `Z.args` to retrieve the arrays `A`, `B`, `C`, etc.
+
 
 """ ZippedArray
 
@@ -96,7 +101,7 @@ Use the syntax `Z.args` to retrieve the arrays `A`, `B`, `C`, etc.
 #     L = number of zipped arrays
 #     I = indexing style (true for linear, false otherwise)
 #     S = type of L-tuple of zipped arrays
-struct ZippedArray{T,N,L,I,S<:ArrayTuple{L,N}} <: AbstractArray{T,N}
+struct ZippedArray{T,N,L,I,S<:Union{ArrayTuple{L,N},ArrayNamedTuple{L,N}}} <: AbstractArray{T,N}
     args::S
 end
 
@@ -107,6 +112,13 @@ ZippedArray() = throw(at_least_one_array_to_zip)
 ZippedArray(args::AbstractArray...) = ZippedArray(args)
 ZippedArray(args::Tuple{Vararg{AbstractArray}}) = throw(not_same_ndims)
 function ZippedArray(args::S) where {L,N,S<:ArrayTuple{L,N}}
+    T = Tuple{map(eltype, args)...}
+    I = get_index_style(args...) === IndexLinear()
+    return ZippedArray{T,N,L,I,S}(args)
+end
+
+ZippedArray(;args...) = ZippedArray(values(args))
+function ZippedArray(args::S) where {L,N,S<:ArrayNamedTuple{L,N}}
     T = Tuple{map(eltype, args)...}
     I = get_index_style(args...) === IndexLinear()
     return ZippedArray{T,N,L,I,S}(args)
@@ -123,16 +135,30 @@ function ZippedArray{T}(args::S) where {T,L,N,S<:ArrayTuple{L,N}}
     I = get_index_style(args...) === IndexLinear()
     return ZippedArray{T,N,L,I,S}(args)
 end
+ZippedArray{T}(;args...) where {T} = ZippedArray{T}(values(args))
+function ZippedArray{T}(args::S) where {T,L,N,S<:ArrayNamedTuple{L,N}}
+    # We do not enforce that the number of arrays matches the number of fields
+    # is `T` is a structure type to let the caller provides its own builder.
+    !(T <: Tuple) || destruct_count(T) == L || throw(ArgumentError(
+        "number of entries in element type `$T` must match number of arguments"))
+    I = get_index_style(args...) === IndexLinear()
+    return ZippedArray{T,N,L,I,S}(args)
+end
+
 
 ZippedArray{T,N}() where {T,N} = throw(at_least_one_array_to_zip)
 ZippedArray{T,N}(args::AbstractArray...) where {T,N} = ZippedArray{T,N}(args)
 ZippedArray{T,N}(args::Tuple{Vararg{AbstractArray}}) where {T,N} =
     throw(DimensionMismatch("arrays to zip must all have $N dimensions"))
 ZippedArray{T,N}(args::ArrayTuple{L,N}) where {T,L,N} = ZippedArray{T}(args)
+ZippedArray{T,N}(args::ArrayNamedTuple{L,N}) where {T,L,N} = ZippedArray{T}(args)
+
+ZippedArray{T,N}(;args...) where {T,N} = ZippedArray{T,N}(values(args))
+
 
 for (f, n) in ((:ZippedVector, 1), (:ZippedMatrix, 2))
     @eval begin
-        const $f{T,L,I,S<:ArrayTuple{L,$n}} = ZippedArray{T,$n,L,I,S}
+        const $f{T,L,I,S<:Union{ArrayTuple{L,$n},ArrayNamedTuple{L,$n}}} = ZippedArray{T,$n,L,I,S}
         $f() = throw(at_least_one_array_to_zip)
         $f{T}() where {T} = throw(at_least_one_array_to_zip)
         $f(args::AbstractArray...) = $f(args)
@@ -187,6 +213,11 @@ Base.IndexStyle(::Type{<:SlowZippedArray}) = IndexCartesian()
     _encode_getindex(:T, :A, :i, L)
 @generated Base.getindex(A::SlowZippedArray{T,N,L}, i::Vararg{Int,N}) where {T,N,L} =
     _encode_getindex(:T, :A, :(i...), L)
+@generated Base.getindex(A::FastZippedArray{T,N,L,S}, i::Int) where {T,N,L,V,M,S<:NamedTuple{V,M}} = 
+    _encode_getindex(:T, :A, :i, L,V)
+@generated Base.getindex(A::SlowZippedArray{T,N,L,S}, i::Vararg{Int,N}) where {T,N,L,V,M,S<:NamedTuple{V,M}} = 
+   _encode_getindex(:T, :A, :(i...), L,V)
+
 
 @generated Base.setindex!(A::FastZippedArray{T,N,L}, x, i::Int) where {T,N,L} =
     _encode_setindex(:A, :x, :i, L)
@@ -211,6 +242,16 @@ function _encode_getindex(T::Symbol, A::Symbol, i::Union{Integer,Symbol,Expr}, n
         $(Expr(:meta, :inline))
         @boundscheck checkbounds($A, $i)
         return @inbounds build($T, $vals)
+    end
+end
+# Generate code for method `Base.getindex` applied to a zipped array whose name
+# is `A` and at index expression `i`.
+function _encode_getindex(T::Symbol, A::Symbol, i::Union{Integer,Symbol,Expr}, n::Int,S)
+    vals = _encode_list_of_entries(A, i, n)
+    return quote
+        $(Expr(:meta, :inline))
+        @boundscheck checkbounds($A, $i)
+        return NamedTuple{$S}(@inbounds build($T, $vals))
     end
 end
 
