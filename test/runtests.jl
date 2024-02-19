@@ -168,6 +168,36 @@ end
     @test map(x -> x[2], Z) == B
     @test_throws BoundsError Z[-1]
 
+# Zip 2 named arrays.
+    Z = @inferred ZippedArray(A=A,B=B)
+    @test @inferred(ZippedArray((A=A,B=B))) === Z
+    @test @inferred(ZippedArray{Tuple{eltype(A),eltype(B)}}((A=A,B=B))) === Z
+    @test @inferred(ZippedArray{Tuple{eltype(A),eltype(B)}}(A=A,B=B)) === Z
+    @test @inferred(ZippedArray{Tuple{eltype(A),eltype(B)},ndims(A)}((A=A,B=B))) === Z
+    @test_throws DimensionMismatch ZippedArray(A,view(A,:,:,2))
+    @test_throws DimensionMismatch ZippedArray{Tuple{eltype(A),eltype(A)}}(A,view(A,:,:,2))
+    @test_throws DimensionMismatch ZippedArray{Tuple{eltype(A),eltype(A)},ndims(A)}(A,view(A,:,:,2))
+    @test Z.args === (A=A,B=B,)
+    @test IndexStyle(Z) === IndexLinear()
+    @test eltype(Z) === Tuple{eltype(A),eltype(B)}
+    @test ndims(Z) == ndims(A)
+    @test size(Z) == size(A)
+    @test size(Z,1) == size(A,1)
+    @test axes(Z) == axes(A)
+    @test axes(Z,2) == axes(A,2)
+    @test setindex!(Z, (7, 2.3), 2,3,1) === Z
+    for i in (12, CartesianIndex(1,2,3))
+        x = Z[i] # save values
+        @test Z[i] === (A=A[i], B=B[i])
+        Z[i] = (A[i]+1, B[i]+2)
+        @test A[i] == x[1]+1
+        @test B[i] == x[2]+2
+    end
+    @test map(x -> x[1], Z) == A
+    @test map(x -> x[2], Z) == B
+    @test_throws BoundsError Z[-1]
+
+    
     # Zip 2 regular arrays and a view.
     Z = @inferred ZippedArray(A,V,C)
     @test Z.args === (A,V,C,)
