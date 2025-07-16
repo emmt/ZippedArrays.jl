@@ -10,8 +10,8 @@ using Base: Fix1, Fix2, IteratorSize, HasLength, HasShape, to_shape
 """
     ZippedArrays.destruct(x) -> tuple
 
-yields a tuple of the fields of `x` if `x` is a structured object, or just
-returns `x` if `x` is a tuple.
+yields a tuple of the fields of `x` if `x` is a structured object, or just returns `x` if
+`x` is a tuple.
 
 `x` may also be a structure or tuple type.
 
@@ -32,8 +32,8 @@ destruct(::Type{T}) where {T} = Tuple{ntuple(i -> fieldtype(T, i), Val(fieldcoun
 """
     ZippedArrays.destruct(x, i)
 
-yields `i`-th field of `x` if `x` is a structured object, or just `i`-th entry
-of `x` if `x` is a tuple.
+yields `i`-th field of `x` if `x` is a structured object, or just `i`-th entry of `x` if
+`x` is a tuple.
 
 `x` may also be a structure or tuple type.
 
@@ -46,8 +46,8 @@ destruct(::Type{T}, i::Int) where {T} = fieldtype(T, i)
 """
     ZippedArrays.destruct_count(T)
 
-yields the number of fields of `T` if `T` is a structure type, or the number of
-entries in `T` if `T` is a tuple type.
+yields the number of fields of `T` if `T` is a structure type, or the number of entries in
+`T` if `T` is a tuple type.
 
 """
 destruct_count(::Type{T}) where {T<:Tuple} = length(T.parameters)
@@ -60,8 +60,8 @@ builds an object of type `T` whose fields are the entries of the tuple `x`.
 
 This method reverses the effects of [`ZippedArrays.destruct`](@ref).
 
-The method may be extended by callers to implement a different behavior than
-the default implementation which is:
+The method may be extended by callers to implement a different behavior than the default
+implementation which is:
 
     convert(T, x)   # if `T` is a tuple type
     T(x...)         # otherwise (i.e., call constructor)
@@ -76,12 +76,12 @@ the default implementation which is:
 """
     Z = ZippedArray(A,B,C,...)
 
-builds a zipped array `Z` based on arrays `A`, `B`, `C`, etc. such that the
-syntax `Z[i]` yields a tuple of values `(A[i],B[i],C[i],...)` while the syntax
-`Z[i] = (a,b,c,...)` is equivalent to `(A[i],B[i],C[i],...) = (a,b,c,...)`.
+builds a zipped array `Z` based on arrays `A`, `B`, `C`, etc. such that the syntax `Z[i]`
+yields a tuple of values `(A[i],B[i],C[i],...)` while the syntax `Z[i] = (a,b,c,...)` is
+equivalent to `(A[i],B[i],C[i],...) = (a,b,c,...)`.
 
-Any number of arrays can be zipped together, they must however have the same
-indices (as given by calling the `axes` method).
+Any number of arrays can be zipped together, they must however have the same indices (as
+given by calling the `axes` method).
 
 Use the syntax `Z.args` to retrieve the arrays `A`, `B`, `C`, etc.
 
@@ -113,8 +113,8 @@ end
 ZippedArray{T}(args::AbstractArray...) where {T} = ZippedArray{T}(args)
 function ZippedArray{T}(args::S) where {T,L,S<:NTuple{L,AbstractArray}}
     L ≥ 1 || throw(at_least_one_array_to_zip)
-    # We do not enforce that the number of arrays matches the number of fields
-    # if `T` is a structure type to let the caller provides its own builder.
+    # We do not enforce that the number of arrays matches the number of fields if `T` is a
+    # structure type to let the caller provides its own builder.
     !(T <: Tuple) || destruct_count(T) == length(args) || throw(ArgumentError(
         "number of entries in element type `$T` must match number of arguments"))
     N = length(same_axes(args...)) # clash if arguments do not have the same axes
@@ -139,8 +139,8 @@ end
 """
     Z = ZippedArray{Tuple{T1,T2,...}}(undef, dims...)
 
-builds an uninitialized zipped array `Z` of size `dims...` whose elements are
-tuples whose entries have types `T1`, `T2`, ...
+builds an uninitialized zipped array `Z` of size `dims...` whose elements are tuples whose
+entries have types `T1`, `T2`, ...
 
 """
 ZippedArray{T}(::UndefInitializer, dims::Integer...) where {T} =
@@ -194,13 +194,13 @@ Base.checkbounds(::Type{Bool}, A::FastZippedArray{T,N,L}, i::Int) where {T,N,L} 
 Base.checkbounds(::Type{Bool}, A::SlowZippedArray{T,N,L}, i::Vararg{Int,N}) where {T,N,L} =
     checkbounds(Bool, A.args[1], i...)
 
-# Generate expression corresponding to the list of entries of a zipped array
-# whose name is `A` and at index expression `i`.
+# Generate expression corresponding to the list of entries of a zipped array whose name is
+# `A` and at index expression `i`.
 _encode_list_of_entries(A::Symbol, i::Union{Integer,Symbol,Expr}, n::Int) =
     Expr(:tuple, ntuple(j -> :($A.args[$j][$i]), Val(n))...)
 
-# Generate code for method `Base.getindex` applied to a zipped array whose name
-# is `A` and at index expression `i`.
+# Generate code for method `Base.getindex` applied to a zipped array whose name is `A` and
+# at index expression `i`.
 function _encode_getindex(T::Symbol, A::Symbol, i::Union{Integer,Symbol,Expr}, n::Int)
     vals = _encode_list_of_entries(A, i, n)
     return quote
@@ -210,8 +210,8 @@ function _encode_getindex(T::Symbol, A::Symbol, i::Union{Integer,Symbol,Expr}, n
     end
 end
 
-# Generate code for method `Base.setindex!` applied to a zipped array whose name
-# is `A` and at index expression `i`.
+# Generate code for method `Base.setindex!` applied to a zipped array whose name is `A`
+# and at index expression `i`.
 function _encode_setindex(A::Symbol, x::Symbol, i::Union{Integer,Symbol,Expr}, n::Int)
     vals = _encode_list_of_entries(A, i, n)
     return quote
