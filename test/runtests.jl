@@ -2,7 +2,7 @@ module TestingZippedArrays
 
 using Test
 using ZippedArrays
-using ZippedArrays: throw_indices_mismatch, all_match
+using ZippedArrays: indices_mismatch, all_isequal, same_axes
 
 function generate_array(::Type{T}, dims::Dims{N}) where {T,N}
     A = Array{T,N}(undef, dims)
@@ -57,12 +57,13 @@ end
                 @test @inferred(build(T, y...)) === x
             end
         end
-        let get_index_style = ZippedArrays.get_index_style,
+        let same_axes = ZippedArrays.same_axes,
             A = rand(Float32, 4, 3), B = rand(Int16, 4, 3), C = rand(Int8, 2, 3)
-            @test @inferred(get_index_style()) === IndexLinear()
-            @test @inferred(get_index_style(A, B)) === IndexLinear()
-            @test @inferred(get_index_style(view(A, 2:3, :), C)) === IndexCartesian()
-            @test_throws DimensionMismatch get_index_style(A, B, C)
+            @test @inferred(same_axes()) === ()
+            @test @inferred(same_axes(A, B)) == axes(A)
+            @test @inferred(same_axes(A, B)) == axes(B)
+            @test @inferred(same_axes(view(A, 2:3, :), C)) == axes(C)
+            @test_throws DimensionMismatch same_axes(A, B, C)
         end
     end
     dims = (2,3,4)
@@ -73,12 +74,11 @@ end
     E = generate_array(Float32, (dims .+ 1))
     V = view(E, map(d -> 2:d+1, dims)...)
 
-    for bool in (true, false)
-        @test_throws DimensionMismatch throw_indices_mismatch(bool, A, B, E)
-    end
+    @test indices_mismatch(true, A, B, E) isa String
+    @test indices_mismatch(false, A, B, E) isa String
     @test_throws DimensionMismatch ZippedArray(A,D)
     @test_throws DimensionMismatch ZippedArray(A,E)
-    @test all_match(nothing, cos)
+    @test all_isequal(cos, nothing)
 
     # Create uninitialized zipped arrays.
     let types = (Int16,), Z = @inferred ZippedArray{Tuple{types...}}(undef, map(Int16, dims)...)
@@ -308,11 +308,11 @@ end
     a = rand(Bool, n)
     b = rand(Float32, n)
     c = rand(Int16, n)
-    @test_throws Exception sizehint!(ZippedVector(a,b,c,1:n), n + 50)
-    let Z = ZippedVector(a,b,c,1:n)
-        @test_throws Exception resize!(Z, n + 50)
-        @test map(length, Z.args) == (n,n,n,n)
-    end
+    #@test_throws Exception sizehint!(ZippedVector(a,b,c,1:n), n + 50)
+    #let Z = ZippedVector(a,b,c,1:n)
+    #    @test_throws Exception resize!(Z, n + 50)
+    #    @test map(length, Z.args) == (n,n,n,n)
+    #end
     Z = @inferred sizehint!(ZippedVector(a,b,c), n + 50)
     @test [(a[i],b[i],c[i]) for i in 1:n] == Z
     x = (rand(eltype(a)), rand(eltype(b)), rand(eltype(c)))

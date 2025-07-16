@@ -73,9 +73,6 @@ the default implementation which is:
 @inline build(::Type{T}, x::T) where {T} = x
 @inline build(::Type{T}, x::Tuple) where {T} = T(x...)
 
-# Alias for a tuple of arrays.
-const ArrayTuple{L,N} = NTuple{L,AbstractArray{<:Any,N}}
-
 """
     Z = ZippedArray(A,B,C,...)
 
@@ -96,47 +93,46 @@ Use the syntax `Z.args` to retrieve the arrays `A`, `B`, `C`, etc.
 #     L = number of zipped arrays
 #     I = indexing style (true for linear, false otherwise)
 #     S = type of L-tuple of zipped arrays
-struct ZippedArray{T,N,L,I,S<:ArrayTuple{L,N}} <: AbstractArray{T,N}
+struct ZippedArray{T,N,L,I,S<:NTuple{L,AbstractArray{<:Any,N}}} <: AbstractArray{T,N}
     args::S
 end
 
 const at_least_one_array_to_zip = ArgumentError("there must be at least one array to zip")
 const not_same_ndims = DimensionMismatch("arrays to zip must have the same number of dimensions")
 
-ZippedArray() = throw(at_least_one_array_to_zip)
+
 ZippedArray(args::AbstractArray...) = ZippedArray(args)
-ZippedArray(args::Tuple{Vararg{AbstractArray}}) = throw(not_same_ndims)
-function ZippedArray(args::S) where {L,N,S<:ArrayTuple{L,N}}
+function ZippedArray(args::S) where {L,S<:NTuple{L,AbstractArray}}
+    L ≥ 1 || throw(at_least_one_array_to_zip)
     T = Tuple{map(eltype, args)...}
-    I = get_index_style(args...) === IndexLinear()
+    N = length(same_axes(args...)) # clash if arguments do not have the same axes
+    I = IndexStyle(args...) === IndexLinear()
     return ZippedArray{T,N,L,I,S}(args)
 end
 
-ZippedArray{T}() where {T} = throw(at_least_one_array_to_zip)
 ZippedArray{T}(args::AbstractArray...) where {T} = ZippedArray{T}(args)
-ZippedArray{T}(args::Tuple{Vararg{AbstractArray}}) where {T} = throw(not_same_ndims)
-function ZippedArray{T}(args::S) where {T,L,N,S<:ArrayTuple{L,N}}
+function ZippedArray{T}(args::S) where {T,L,S<:NTuple{L,AbstractArray}}
+    L ≥ 1 || throw(at_least_one_array_to_zip)
     # We do not enforce that the number of arrays matches the number of fields
-    # is `T` is a structure type to let the caller provides its own builder.
-    !(T <: Tuple) || destruct_count(T) == L || throw(ArgumentError(
+    # if `T` is a structure type to let the caller provides its own builder.
+    !(T <: Tuple) || destruct_count(T) == length(args) || throw(ArgumentError(
         "number of entries in element type `$T` must match number of arguments"))
-    I = get_index_style(args...) === IndexLinear()
+    N = length(same_axes(args...)) # clash if arguments do not have the same axes
+    I = IndexStyle(args...) === IndexLinear()
     return ZippedArray{T,N,L,I,S}(args)
 end
 
-ZippedArray{T,N}() where {T,N} = throw(at_least_one_array_to_zip)
 ZippedArray{T,N}(args::AbstractArray...) where {T,N} = ZippedArray{T,N}(args)
 ZippedArray{T,N}(args::Tuple{Vararg{AbstractArray}}) where {T,N} =
     throw(DimensionMismatch("arrays to zip must all have $N dimensions"))
-ZippedArray{T,N}(args::ArrayTuple{L,N}) where {T,L,N} = ZippedArray{T}(args)
+ZippedArray{T,N}(args::Tuple{Vararg{AbstractArray{<:Any,N}}}) where {T,N} =
+    ZippedArray{T}(args)
 
 for (f, n) in ((:ZippedVector, 1), (:ZippedMatrix, 2))
     @eval begin
-        const $f{T,L,I,S<:ArrayTuple{L,$n}} = ZippedArray{T,$n,L,I,S}
-        $f() = throw(at_least_one_array_to_zip)
-        $f{T}() where {T} = throw(at_least_one_array_to_zip)
+        const $f{T,L,I,S<:NTuple{L,AbstractArray{<:Any,$n}}} = ZippedArray{T,$n,L,I,S}
         $f(args::AbstractArray...) = $f(args)
-        $f(args::Tuple{Vararg{AbstractArray}}) = $f{Tuple{map(eltype, args)...}}(args)
+        $f(args::Tuple{Vararg{AbstractArray}}) = ZippedArray{Tuple{map(eltype, args)...},$n}(args)
     end
 end
 
@@ -284,35 +280,23 @@ function Base.append!(A::ZippedVector, iter)
     return A
 end
 
-"""
-    all_match(val, f, args...) -> bool
+# `all_isequal(f,x,args...)` yields whether `isequal(f(a),x)` holds for all `a ∈ args`.
+all_isequal(f::Function, x) = true
+all_isequal(f::Function, x, A) = isequal(f(A), x)
+@inline all_isequal(f::Function, x, A, B...) = all_isequal(f, x, A) && all_isequal(f, x, B...)
 
-yields whether `f(arg) == val` for all `arg ∈ args`.
-
-"""
-all_match(val, f::Function) = true
-all_match(val, f::Function, A) = f(A) == val
-@inline all_match(val, f::Function, A, B...) =
-    all_match(val, f, A) && all_match(val, f, B...)
-
-"""
-    get_index_style(A...) -> IndexLinear() or IndexCartesian()
-
-yields the most efficient indexing style for accessing arrays `A...` with the
-same index. An exception is thrown if arguments do not have the same axes.
-
-"""
-get_index_style() = IndexLinear()
-get_index_style(A::AbstractArray) = IndexStyle(A)
-@inline function get_index_style(A::AbstractArray, B::AbstractArray...)
-    all_match(axes(A), axes, B...) || throw_indices_mismatch(A, B...)
-    return IndexStyle(A, B...)
+same_axes() = ()
+same_axes(A::AbstractArray) = axes(A)
+@inline function same_axes(A::AbstractArray, B::AbstractArray...)
+    inds = axes(A)
+    all_isequal(axes, inds, B...) || throw(DimensionMismatch(indices_mismatch(A, B...)))
+    return inds
 end
 
-@noinline throw_indices_mismatch(A::AbstractArray...) =
-    throw_indices_mismatch(Base.has_offset_axes(A...), A...)
+@noinline indices_mismatch(A::AbstractArray...) =
+    indices_mismatch(Base.has_offset_axes(A...), A...)
 
-@noinline function throw_indices_mismatch(show_axes::Bool, A::AbstractArray...)
+@noinline function indices_mismatch(show_axes::Bool, A::AbstractArray...)
     io = IOBuffer()
     write(io, "all arguments of `ZippedArray` must have the same ")
     write(io, show_axes ? "indices, got axes " : "shape, got shapes ")
@@ -336,7 +320,7 @@ end
         end
         write(io, (n == 1 ? ",)" : ")"))
     end
-    throw(DimensionMismatch(String(take!(io))))
+    return String(take!(io))
 end
 
 end # module
