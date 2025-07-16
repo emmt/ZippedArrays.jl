@@ -1,14 +1,14 @@
 # Zipping Julia arrays together
 
-[![License][license-img]][license-url]
-[![Build Status][github-ci-img]][github-ci-url]
-[![Build Status][appveyor-img]][appveyor-url]
-[![Coverage][codecov-img]][codecov-url]
+[![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](./LICENSE.md)
+[![Build Status](https://github.com/emmt/ZippedArrays.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/emmt/ZippedArrays.jl/actions/workflows/CI.yml?query=branch%3Amaster)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/emmt/ZippedArrays.jl?branch=master)](https://ci.appveyor.com/project/emmt/ZippedArrays-jl/branch/master)
+[![Coverage](http://codecov.io/github/emmt/ZippedArrays.jl/coverage.svg?branch=master)](http://codecov.io/github/emmt/ZippedArrays.jl?branch=master)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-`ZippedArrays` is a [Julia][julia-url] package to zip several (abstract) arrays together
-for accessing their elements simultaneously. For instance, assuming that `A`, `B` and `C`
-are 3 Julia arrays, then:
+`ZippedArrays` is a [Julia](https://julialang.org/)] package to zip several (abstract)
+arrays together for accessing their elements simultaneously. For instance, assuming that
+`A`, `B` and `C` are 3 Julia arrays, then:
 
 ```julia
 using ZippedArrays
@@ -120,24 +120,3 @@ end
 @btime sum_first($C) # 1.615 μs (0 allocations: 0 bytes)
 @btime sum_first($Z) # 643.983 ns (0 allocations: 0 bytes)
 ```
-
-[doc-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[doc-stable-url]: https://emmt.github.io/ZippedArrays.jl/stable
-
-[doc-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[doc-dev-url]: https://emmt.github.io/ZippedArrays.jl/dev
-
-[license-url]: ./LICENSE.md
-[license-img]: http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat
-
-[github-ci-img]: https://github.com/emmt/ZippedArrays.jl/actions/workflows/CI.yml/badge.svg?branch=master
-[github-ci-url]: https://github.com/emmt/ZippedArrays.jl/actions/workflows/CI.yml?query=branch%3Amaster
-
-[appveyor-img]: https://ci.appveyor.com/api/projects/status/github/emmt/ZippedArrays.jl?branch=master
-[appveyor-url]: https://ci.appveyor.com/project/emmt/ZippedArrays-jl/branch/master
-
-[codecov-img]: http://codecov.io/github/emmt/ZippedArrays.jl/coverage.svg?branch=master
-[codecov-url]: http://codecov.io/github/emmt/ZippedArrays.jl?branch=master
-
-[julia-url]: https://julialang.org/
-[julia-pkgs-url]: https://pkg.julialang.org/
