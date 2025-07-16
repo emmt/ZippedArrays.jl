@@ -1,5 +1,11 @@
 # User visible changes in `ZippedArrays`
 
+## Unreleased
+
+### Added
+
+- Pass all [`Aqua.jl`](https://github.com/JuliaTesting/Aqua.jl) tests.
+
 ## Version 0.2.0
 
 - Element type of a zipped array can be a tuple type (as before) or a structure

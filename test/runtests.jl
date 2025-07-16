@@ -355,4 +355,6 @@ end
     @test flag
 end
 
+include("Aqua.jl")
+
 end

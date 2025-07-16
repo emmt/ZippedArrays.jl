@@ -4,10 +4,13 @@ authors = ["Éric Thiébaut <https://github.com/emmt>"]
 version = "0.2.0"
 
 [compat]
+Aqua = "0.8"
+Test = "<0.0.1, 1"
 julia = "1.0"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Test", "Aqua"]

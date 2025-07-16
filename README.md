@@ -4,6 +4,7 @@
 [![Build Status][github-ci-img]][github-ci-url]
 [![Build Status][appveyor-img]][appveyor-url]
 [![Coverage][codecov-img]][codecov-url]
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 `ZippedArrays` is a [Julia][julia-url] package to zip several (abstract) arrays
 together for accessing their elements simultaneously. For instance, assuming
