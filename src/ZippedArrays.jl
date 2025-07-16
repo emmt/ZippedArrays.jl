@@ -229,18 +229,18 @@ Base.deepcopy(A::ZippedArray) = ZippedArray{eltype(A)}(map(deepcopy, A.args))
 Base.similar(A::ZippedArray, ::Type{T}, dims::Dims{N}) where {T,N} =
     destruct_count(T) > 0 ? ZippedArray{T}(undef, dims) : Array{T}(undef, dims)
 
-function Base.resize!(A::ZippedVector{<:Any,L}, n::Integer) where {L}
-    newlen = Int(n)
+function Base.resize!(A::ZippedVector, n::Integer)
+    newlen = Int(n)::Int
     oldlen = length(A)
     if newlen != oldlen
         try
-            for i in 1:L
-                resize!(A.args[i], newlen)
+            for arg in A.args
+                resize!(arg, newlen)
             end
         catch err
             # Restore previous length.
-            for i in 1:L
-                length(A.args[i]) == oldlen || resize!(A.args[i], oldlen)
+            for arg in A.args
+                length(arg) == oldlen || resize!(arg, oldlen)
             end
             rethrow(err)
         end
