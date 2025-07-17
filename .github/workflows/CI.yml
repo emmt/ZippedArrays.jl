@@ -5,6 +5,8 @@ on:
       - master
     tags: '*'
   pull_request:
+env:
+  CODECOV_TOKEN: 0e31c641-429d-44b8-8483-16e8455f11ff
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
