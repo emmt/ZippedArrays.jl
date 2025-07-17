@@ -308,11 +308,16 @@ end
     a = rand(Bool, n)
     b = rand(Float32, n)
     c = rand(Int16, n)
-    #@test_throws Exception sizehint!(ZippedVector(a,b,c,1:n), n + 50)
-    #let Z = ZippedVector(a,b,c,1:n)
-    #    @test_throws Exception resize!(Z, n + 50)
-    #    @test map(length, Z.args) == (n,n,n,n)
-    #end
+    Z = ZippedVector(a,b,c,1:n)
+    @test_throws Exception resize!(Z, n + 50)
+    @test map(length, Z.args) == (n,n,n,n)
+    if VERSION < v"1.11.0-rc3"
+        # Prior to above version, `sizehint!` throws on unsupported arrays.
+        @test_throws Exception sizehint!(Z, n + 50)
+    else
+        # Since above version, `sizehint!` is a no-op by default for abstract arrays.
+        @test sizehint!(Z, n + 50) === Z
+    end
     Z = @inferred sizehint!(ZippedVector(a,b,c), n + 50)
     @test [(a[i],b[i],c[i]) for i in 1:n] == Z
     x = (rand(eltype(a)), rand(eltype(b)), rand(eltype(c)))
