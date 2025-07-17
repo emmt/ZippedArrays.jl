@@ -6,6 +6,10 @@
 
 - Pass all [`Aqua.jl`](https://github.com/JuliaTesting/Aqua.jl) tests.
 
+- Non-exported public functions `ZippedArrays.build`, `ZippedArrays.destruct` and
+  `ZippedArrays.destruct_count` declared with the `@public` macro from the
+  [`TypeUtils.jl`](https://github.com/emmt/TypeUtils.jl) package.
+
 ## Version 0.2.0
 
 - Element type of a zipped array can be a tuple type (as before) or a structure type. For

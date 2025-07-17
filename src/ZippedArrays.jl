@@ -5,6 +5,12 @@ export
     ZippedVector,
     ZippedMatrix
 
+using TypeUtils: @public
+
+@public build
+@public destruct
+@public destruct_count
+
 using Base: Fix1, Fix2, IteratorSize, HasLength, HasShape, to_shape
 
 """
@@ -99,7 +105,6 @@ end
 
 const at_least_one_array_to_zip = ArgumentError("there must be at least one array to zip")
 const not_same_ndims = DimensionMismatch("arrays to zip must have the same number of dimensions")
-
 
 ZippedArray(args::AbstractArray...) = ZippedArray(args)
 function ZippedArray(args::S) where {L,S<:NTuple{L,AbstractArray}}
